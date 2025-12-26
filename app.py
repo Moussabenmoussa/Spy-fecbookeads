@@ -1,216 +1,268 @@
 
 import os, re
-from datetime import datetime
+import google.generativeai as genai
 from flask import Flask, jsonify, request, render_template_string
 from playwright.sync_api import sync_playwright
 
 app = Flask(__name__)
 
-# --- واجهة التيرمينال الاحترافية (Hacker UI) ---
+# --- إعدادات الذكاء الاصطناعي ---
+os.environ["GEMINI_API_KEY"] = "AIzaSyDApm1SX0Nz_cuWE0I65t3ydz-wfPloSnM"
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro')
+
+# --- واجهة الداشبورد (Clean SaaS Design) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Hunter Terminal v5.0</title>
+    <title>DZ Hunter Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0c0c0c; color: #33ff00; font-family: 'Courier New', monospace; margin: 0; padding: 20px; font-size: 14px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
-        .title { font-size: 20px; font-weight: bold; letter-spacing: 2px; }
-        .subtitle { color: #666; font-size: 12px; }
+        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --accent: #8b5cf6; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
         
-        .input-area { display: flex; align-items: center; background: #111; padding: 12px; border: 1px solid #333; border-radius: 4px; }
-        .prompt { color: #33ff00; margin-right: 10px; font-weight: bold; }
-        input { background: transparent; border: none; color: #fff; font-family: inherit; font-size: 16px; flex: 1; outline: none; }
+        .navbar { background: var(--card); border-bottom: 1px solid #e5e7eb; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 900; font-size: 24px; color: var(--primary); letter-spacing: -1px; }
+        .logo span { color: var(--text); }
         
-        .logs { background: #000; border: 1px solid #333; height: 500px; overflow-y: auto; padding: 15px; margin-top: 20px; white-space: pre-wrap; border-radius: 4px; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
         
-        .log-sys { color: #555; }
-        .log-info { color: #ccc; }
-        .log-winner { color: #33ff00; font-weight: bold; text-shadow: 0 0 5px #33ff00; }
-        .log-test { color: #f1c40f; }
-        .log-link a { color: #00ffff; text-decoration: none; border-bottom: 1px dotted #00ffff; }
-        .log-link a:hover { background: #00ffff; color: #000; }
+        /* Search Box */
+        .search-section { text-align: center; margin-bottom: 40px; }
+        .search-box { background: var(--card); padding: 10px; border-radius: 50px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: inline-flex; width: 100%; max-width: 600px; border: 1px solid #e5e7eb; }
+        input { border: none; outline: none; flex: 1; padding: 15px 25px; font-size: 16px; border-radius: 50px; }
+        button { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #1d4ed8; transform: translateY(-1px); }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        /* AI Analysis Box */
+        .ai-box { background: linear-gradient(135deg, #fdfbfb 0%, #f4f7f6 100%); border: 2px solid var(--accent); border-radius: 16px; padding: 30px; margin-bottom: 40px; display: none; position: relative; overflow: hidden; }
+        .ai-title { color: var(--accent); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .ai-content { line-height: 1.8; white-space: pre-wrap; color: #374151; font-size: 15px; }
+        
+        /* Grid Layout */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
+        
+        /* Cards */
+        .section-title { font-weight: 800; font-size: 18px; margin-bottom: 20px; color: #4b5563; display: flex; align-items: center; gap: 8px; }
+        
+        .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #f3f4f6; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: transform 0.2s; margin-bottom: 15px; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: #6b7280; }
+        .card-title { font-weight: 700; margin-bottom: 5px; color: var(--text); }
+        .card-link { display: block; margin-top: 15px; text-align: center; padding: 10px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 14px; }
+        
+        .fb-card { border-left: 4px solid #1877f2; }
+        .fb-link { background: #eff6ff; color: #1877f2; }
+        .fb-link:hover { background: #dbeafe; }
+        
+        .store-card { border-left: 4px solid #f59e0b; }
+        .store-link { background: #fffbeb; color: #d97706; }
+        .store-link:hover { background: #fef3c7; }
+
+        /* Loader */
+        .loader { display: none; margin: 20px auto; width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .status-msg { text-align: center; color: #6b7280; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="title">DZ_HUNTER_TERMINAL [PRO]</div>
-        <div class="subtitle">TARGET: FACEBOOK ADS LIBRARY | STATUS: ONLINE</div>
-    </div>
-    
-    <div class="input-area">
-        <span class="prompt">root@hunter:~$</span>
-        <input type="text" id="cmd" placeholder="Enter keyword (e.g. montre, cuisine)..." autocomplete="off">
+    <div class="navbar">
+        <div class="logo">DZ <span>HUNTER</span></div>
+        <div style="font-size: 12px; font-weight: 600; color: #10b981; background: #d1fae5; padding: 5px 12px; border-radius: 20px;">● System Online</div>
     </div>
 
-    <div class="logs" id="console">
-        <div class="log-sys">> System initialized.</div>
-        <div class="log-sys">> Smart Analysis Module loaded.</div>
-        <div class="log-sys">> Ready for command...</div>
+    <div class="container">
+        <div class="search-section">
+            <h1 style="margin-bottom: 10px; font-size: 28px;">Find Your Next Winner</h1>
+            <p style="color: #6b7280; margin-bottom: 30px;">Analyze Facebook Ads & Local Stores with AI Power</p>
+            
+            <div class="search-box">
+                <input type="text" id="keyword" placeholder="Enter product (e.g. montre, cuisine)...">
+                <button onclick="startAnalysis()" id="btn">Analyze</button>
+            </div>
+            <div class="loader" id="loader"></div>
+            <div class="status-msg" id="status"></div>
+        </div>
+
+        <div id="aiSection" class="ai-box">
+            <div class="ai-title">✨ Gemini AI Strategy</div>
+            <div class="ai-content" id="aiContent"></div>
+        </div>
+
+        <div class="grid-container">
+            <div>
+                <div class="section-title"><span style="color:#1877f2">●</span> Active Facebook Ads</div>
+                <div id="fbResults"></div>
+            </div>
+
+            <div>
+                <div class="section-title"><span style="color:#f59e0b">●</span> Competitor Stores</div>
+                <div id="storeResults"></div>
+            </div>
+        </div>
     </div>
-</div>
 
 <script>
-    const input = document.getElementById('cmd');
-    const con = document.getElementById('console');
+    async function startAnalysis() {
+        const keyword = document.getElementById('keyword').value;
+        if(!keyword) return;
 
-    function log(msg, type='info') {
-        const div = document.createElement('div');
-        const time = new Date().toLocaleTimeString('en-US',{hour12:false});
-        div.className = `log-${type}`;
-        div.innerHTML = `<span style="color:#444">[${time}]</span> ${msg}`;
-        con.appendChild(div);
-        con.scrollTop = con.scrollHeight;
-    }
+        // Reset UI
+        document.getElementById('btn').disabled = true;
+        document.getElementById('btn').innerText = "Scanning...";
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('status').innerText = "Connecting to Gemini AI & Scraping Data...";
+        document.getElementById('aiSection').style.display = 'none';
+        document.getElementById('fbResults').innerHTML = '';
+        document.getElementById('storeResults').innerHTML = '';
 
-    input.addEventListener("keypress", async (e) => {
-        if (e.key === "Enter") {
-            const val = input.value.trim();
-            if (!val) return;
-            
-            input.value = "";
-            input.disabled = true;
-            log(`Starting scan sequence for: "${val}"`, 'sys');
-            log(`> Bypassing security & analyzing ad duration...`, 'info');
+        try {
+            const res = await fetch(`/scan_ai?q=${keyword}`);
+            const data = await res.json();
 
-            try {
-                const res = await fetch(`/analyze?q=${val}`);
-                const data = await res.json();
-                
-                if (data.status === "success") {
-                    log(`> [SCAN COMPLETE] Found ${data.count} candidates.`, 'sys');
-                    log(`------------------------------------------------`, 'sys');
-                    
-                    data.results.forEach(ad => {
-                        if(ad.is_winner) {
-                            log(`[WINNER] 🔥 ACTIVE FOR ${ad.days} DAYS!`, 'winner');
-                        } else {
-                            log(`[TESTING] 🧪 Active for ${ad.days} days`, 'test');
-                        }
-                        log(`ID: ${ad.id} | <span class="log-link"><a href="${ad.url}" target="_blank">OPEN AD</a></span>`, 'info');
-                        log(`------------------------------------------------`, 'sys');
+            if (data.status === 'success') {
+                // 1. Show AI
+                document.getElementById('aiSection').style.display = 'block';
+                document.getElementById('aiContent').innerText = data.ai_response;
+
+                // 2. Show FB Ads
+                if (data.fb_links.length > 0) {
+                    data.fb_links.forEach(ad => {
+                        document.getElementById('fbResults').innerHTML += `
+                            <div class="card fb-card">
+                                <div class="card-header">
+                                    <span>ID: ${ad.id}</span>
+                                    <span style="color:green; font-weight:bold">• Active</span>
+                                </div>
+                                <div class="card-title">Facebook Ad Campaign</div>
+                                <a href="${ad.url}" target="_blank" class="card-link fb-link">View Ad in Library ↗</a>
+                            </div>`;
                     });
-
-                    if(data.count === 0) log(`> No ads found with clear dates. Try another keyword.`, 'info');
                 } else {
-                    log(`> [ERROR] ${data.msg}`, 'error');
+                    document.getElementById('fbResults').innerHTML = '<div style="color:#999; text-align:center">No active ads found.</div>';
                 }
-            } catch (err) {
-                log(`> [CRITICAL] Server overload. Try again in 10s.`, 'error');
-            } finally {
-                input.disabled = false;
-                input.focus();
+
+                // 3. Show Stores
+                if (data.store_links.length > 0) {
+                    data.store_links.forEach(store => {
+                        document.getElementById('storeResults').innerHTML += `
+                            <div class="card store-card">
+                                <div class="card-header">
+                                    <span>Google Search</span>
+                                    <span>Store</span>
+                                </div>
+                                <div class="card-title">${store.title}</div>
+                                <a href="${store.link}" target="_blank" class="card-link store-link">Visit Store ↗</a>
+                            </div>`;
+                    });
+                } else {
+                    document.getElementById('storeResults').innerHTML = '<div style="color:#999; text-align:center">No specific stores found.</div>';
+                }
+                
+                document.getElementById('status').innerText = "Analysis Complete ✅";
+            } else {
+                document.getElementById('status').innerText = "Error: " + data.msg;
             }
+
+        } catch (err) {
+            document.getElementById('status').innerText = "Server Error. Please try again.";
+        } finally {
+            document.getElementById('btn').disabled = false;
+            document.getElementById('btn').innerText = "Analyze";
+            document.getElementById('loader').style.display = 'none';
         }
-    });
-    input.focus();
+    }
 </script>
 </body>
 </html>
 """
 
-# --- المحرك الذكي (خفيف على الرام + يستخرج التاريخ) ---
-def smart_hunter(keyword):
-    with sync_playwright() as p:
-        # 1. إعدادات قصوى لتوفير الرام (وضع التقشف)
-        browser = p.chromium.launch(
-            headless=True,
-            args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
-        )
-        # صفحة صغيرة جداً
-        page = browser.new_context(viewport={'width': 800, 'height': 600}).new_page()
+# --- الذكاء الاصطناعي ---
+def get_ai_strategy(keyword):
+    try:
+        prompt = f"""
+        Act as an expert e-commerce copywriter for the Algerian market.
+        Product: '{keyword}'.
         
-        # 2. حظر صارم للميديا
-        page.route("**/*", lambda r: r.abort() if r.request.resource_type in ["image", "media", "font", "stylesheet"] else r.continue_())
+        Output Structure:
+        1. 📢 **Ad Hook (Derja):** (A catchy headline)
+        2. 📝 **Ad Body:** (Short persuasive text in Algerian Arabic)
+        3. 🎯 **Targeting:** (3 best interests for FB Ads)
+        4. 💰 **Price:** (Estimated price range in DZD)
+        
+        Keep it concise and professional.
+        """
+        response = model.generate_content(prompt)
+        return response.text
+    except: return "AI service temporarily unavailable."
+
+# --- البحث الخفيف (Playwright Lite) ---
+def hunt_data(keyword):
+    fb_links = []
+    store_links = []
+    
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--single-process'])
+        context = browser.new_context(viewport={'width': 800, 'height': 600})
+        page = context.new_page()
+        page.route("**/*", lambda r: r.abort() if r.request.resource_type in ["image", "media", "font"] else r.continue_())
 
         try:
-            # 3. الذهاب لفيسبوك
-            page.goto(f"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=DZ&q={keyword}", timeout=50000)
-            page.wait_for_timeout(4000)
-
-            # 4. السحر: استخراج النصوص التي تحتوي على التاريخ فقط
-            # نبحث عن كروت تحتوي على كلمة "Started" (بالإنجليزية) أو "Lancée" (بالفرنسية)
-            raw_data = page.evaluate("""() => {
+            # 1. FB
+            page.goto(f"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=DZ&q={keyword}", timeout=40000)
+            page.wait_for_timeout(3000)
+            raw_fb = page.evaluate("""() => {
                 const divs = Array.from(document.querySelectorAll('div'));
-                // نأخذ فقط العناصر التي فيها تاريخ ومعرف
-                const cards = divs.filter(d => 
-                    (d.innerText.includes('Started running') || d.innerText.includes('Lancée le')) && 
-                    d.innerText.includes('ID:') && 
-                    d.innerText.length < 400
-                );
-                // نأخذ 5 نتائج فقط لنضمن عدم انهيار السيرفر
-                return [...new Set(cards.map(c => c.innerText))].slice(0, 5);
+                const texts = divs.filter(d => d.innerText.includes('ID:') && d.innerText.length < 100);
+                return [...new Set(texts.map(t => t.innerText))].slice(0, 5);
             }""")
-
-            results = []
-            for text in raw_data:
-                # استخراج ID
-                id_match = re.search(r'ID: (\d+)', text)
-                if not id_match: continue
-                ad_id = id_match.group(1)
-
-                # استخراج التاريخ وحساب الأيام
-                days_active = 0
-                is_winner = False
-                
-                # محاولة قراءة التاريخ (يدعم الإنجليزية والفرنسية)
-                # English pattern: Started running on Nov 25, 2024
-                en_match = re.search(r'Started running on (.*?) Platforms', text)
-                # French pattern: Lancée le 25 nov. 2024
-                fr_match = re.search(r'Lancée le (.*?) Plateformes', text)
-
-                date_str = ""
-                if en_match: date_str = en_match.group(1).strip()
-                elif fr_match: date_str = fr_match.group(1).strip()
-
-                if date_str:
-                    try:
-                        # تنظيف بسيط للتاريخ
-                        # ملاحظة: التاريخ يعتمد على لغة السيرفر، سنفترض الإنجليزية الافتراضية للتبسيط
-                        # في حالة الفشل نعتبره 0
-                        ad_date = datetime.strptime(date_str.replace("  ", " "), "%b %d, %Y")
-                        days_active = (datetime.now() - ad_date).days
-                    except:
-                        pass # إذا فشل تحليل التاريخ، يبقى 0
-                
-                if days_active >= 4: is_winner = True
-
-                results.append({
-                    "id": ad_id,
-                    "days": days_active,
-                    "is_winner": is_winner,
-                    "url": f"https://www.facebook.com/ads/library/?id={ad_id}"
-                })
+            for t in raw_fb:
+                m = re.search(r'ID: (\d+)', t)
+                if m: fb_links.append({"id": m.group(1), "url": f"https://www.facebook.com/ads/library/?id={m.group(1)}"})
             
-            # ترتيب النتائج: الرابح أولاً
-            results.sort(key=lambda x: x['days'], reverse=True)
-            return results
-
-        except Exception as e:
-            return []
-        finally:
-            browser.close()
+            # 2. Stores
+            page.goto(f"https://www.google.com/search?q={keyword} site:youcan.shop&num=5", timeout=40000)
+            raw_stores = page.evaluate("""() => {
+                const res = [];
+                document.querySelectorAll('.g').forEach(i => {
+                    const t = i.querySelector('h3')?.innerText;
+                    const l = i.querySelector('a')?.href;
+                    if(t && l) res.push({title: t, link: l});
+                });
+                return res.slice(0, 4);
+            }""")
+            store_links = raw_stores
+            
+        except: pass
+        finally: browser.close()
+        
+    return fb_links, store_links
 
 @app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE)
+def index(): return render_template_string(HTML_TEMPLATE)
 
-@app.route('/analyze', methods=['GET'])
-def analyze_endpoint():
+@app.route('/scan_ai', methods=['GET'])
+def scan_ai():
     q = request.args.get('q', '')
-    if not q: return jsonify({"status": "error", "msg": "Empty keyword"})
+    if not q: return jsonify({"status": "error", "msg": "No keyword"})
     
-    data = smart_hunter(q)
-    return jsonify({"status": "success", "count": len(data), "results": data})
+    # تشغيل العمليات
+    ai_res = get_ai_strategy(q)
+    fb, stores = hunt_data(q)
+    
+    return jsonify({
+        "status": "success",
+        "ai_response": ai_res,
+        "fb_links": fb,
+        "store_links": stores
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
