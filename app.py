@@ -9,7 +9,7 @@ app = Flask(__name__)
 # --- إعدادات الذكاء الاصطناعي ---
 os.environ["GEMINI_API_KEY"] = "AIzaSyDV8pA6K4mFs0vnRwjtEKEdTJyJkUby9IU"
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-2.0-flash ')
 
 # --- واجهة الداشبورد (Clean SaaS Design) ---
 HTML_TEMPLATE = """
