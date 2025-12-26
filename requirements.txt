@@ -1,8 +1,4 @@
 flask
+playwright
 pymongo
-playwright
-gunicorn
-google-generativeai
-flask
-playwright
-gunicorn
+python-dotenv
