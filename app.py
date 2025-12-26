@@ -8,47 +8,38 @@ app = Flask(__name__)
 NICHES = {
     "home": [
         "Cuisine", "Maison", "Nettoyage", "Décoration", "Outil",
-        "مطبخ", "بيت", "تنظيف", "ديكور", "أدوات منزلية",
-        "تحف", "مستلزمات", "ترتيب", "تجهيزات منزلية",
-        "أواني", "أثاث", "سجاد", "ستائر", "أدوات تنظيف",
-        "Maison pratique", "Ustensiles", "Décoration intérieure", "Rangement"
+        "Ustensiles", "Décoration intérieure", "Rangement", "Maison pratique",
+        "مطبخ DZ", "ديكور DZ", "أدوات منزلية", "تنظيف", "عرض", "خصم", "توصيل"
     ],
     "beauty": [
         "Soins", "Visage", "Cheveux", "Beauté", "Parfum",
-        "تجميل", "عناية", "بشرة", "شعر", "عطور",
-        "ميكاب", "كريمات", "صبغات", "ماسكات",
-        "مستحضرات تجميل", "صالون", "عناية يومية", "منتجات طبيعية",
-        "Crèmes", "Shampoing", "Huile cheveux", "Makeup", "Parfums"
+        "Makeup", "Cosmétiques", "Shampoing", "Huile cheveux",
+        "تجميل DZ", "بشرة", "شعر", "كريمات", "ماسكات", "عرض", "خصم", "توصيل"
     ],
     "tech": [
         "Montre", "Écouteurs", "Bluetooth", "Chargeur", "Gadget",
-        "ساعات ذكية", "سماعات", "بلوتوث", "شواحن", "أجهزة",
-        "تكنولوجيا", "إلكترونيات", "هواتف", "كاميرات",
-        "Laptop", "Ordinateur", "Clavier", "موس", "أجهزة لوحية",
-        "Powerbank", "Accessoires téléphones", "Smartwatch"
+        "Smartwatch", "Powerbank", "Accessoires téléphones", "Laptop", "Ordinateur",
+        "سماعات DZ", "شواحن", "هواتف", "أجهزة", "عرض", "خصم", "توصيل"
     ],
     "kids": [
         "Jouet", "Bébé", "Enfant", "Éducatif", "Jeu",
-        "ألعاب", "طفل", "رضيع", "تعليمي", "أنشطة للأطفال",
-        "دمى", "سيارات صغيرة", "تعليمية", "ألغاز",
-        "Puzzle", "Figurines", "Coloriage", "Livre enfant", "Jeux éducatifs"
+        "Puzzle", "Figurines", "Coloriage", "Livre enfant", "Jeux éducatifs",
+        "ألعاب DZ", "طفل", "رضيع", "تعليمي", "أنشطة للأطفال", "عرض", "خصم", "توصيل"
     ],
     "fashion": [
         "Sac", "Chaussures", "Vêtement", "Homme", "Femme",
-        "حقائب", "أحذية", "ملابس", "رجالي", "نسائي",
-        "إكسسوارات", "جواكت", "فساتين", "تيشورتات",
-        "Shirts", "Pantalon", "Mode", "Bijoux", "Lunettes"
+        "Shirts", "Pantalon", "Mode", "Bijoux", "Lunettes",
+        "حقائب DZ", "أحذية", "ملابس", "رجالي", "نسائي", "عرض", "خصم", "توصيل"
     ],
     "sports": [
         "Sport", "Fitness", "Gym", "Équipement", "Running",
-        "رياضة", "تمارين", "جيم", "معدات رياضية", "كورة",
-        "حذاء رياضي", "ملابس رياضية", "كرة قدم", "دراجات",
-        "Tapis yoga", "Haltères", "Vêtements fitness"
+        "Tapis yoga", "Haltères", "Vêtements fitness", "Basket", "Football",
+        "رياضة DZ", "تمارين", "جيم", "معدات رياضية", "حذاء رياضي", "عرض", "خصم", "توصيل"
     ],
     "food": [
         "Alimentation", "Snack", "Boisson", "Gâteau", "Pâtisserie",
-        "أكل", "مأكولات", "مشروبات", "حلويات", "معجنات",
-        "Snack healthy", "Fast food", "Fruits", "Légumes", "Juice"
+        "Fast food", "Fruits", "Légumes", "Juice", "Snack healthy",
+        "أكل DZ", "حلويات", "معجنات", "مشروبات", "عرض", "خصم", "توصيل"
     ]
 }
 
