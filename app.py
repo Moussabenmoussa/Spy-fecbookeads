@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
@@ -6,55 +7,65 @@ import datetime
 
 app = Flask(__name__)
 
-# الإعدادات
-MONGO_URI = os.environ.get("MONGO_URI")
-client = MongoClient(MONGO_URI)
-db = client['ad_hunter_db']
-ads_col = db['winning_ads']
+# --- تصحيح الرابط أوتوماتيكياً ---
+# هذا السطر يمسح المسافات الزائدة ويعالج الرابط
+raw_uri = os.environ.get("MONGO_URI", "")
+clean_uri = raw_uri.strip().strip('"').strip("'")
+
+# الاتصال بقاعدة البيانات
+try:
+    client = MongoClient(clean_uri)
+    db = client['ad_hunter_db']
+    ads_col = db['winning_ads']
+    # تجربة اتصال سريعة للتأكد
+    client.server_info()
+    print("✅ تم الاتصال بقاعدة البيانات بنجاح!")
+except Exception as e:
+    print(f"❌ خطأ في قاعدة البيانات: {e}")
 
 def hunt_facebook_ads(keyword, country="DZ"):
     print(f"🕵️ بدء البحث السريع عن: {keyword}...")
     
     with sync_playwright() as p:
-        # تشغيل المتصفح بوضع توفير الموارد
+        # تشغيل المتصفح بوضع توفير الموارد الأقصى
         browser = p.chromium.launch(
             headless=True,
             args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', # مهم جداً للدوكر
+                '--disable-dev-shm-usage',
                 '--disable-gpu'
             ]
         )
-        page = browser.new_page()
+        context = browser.new_context()
+        page = context.new_page()
 
-        # --- السر: منع تحميل الصور والخطوط لتوفير الذاكرة ---
+        # منع تحميل الصور والفيديو والخطوط (تسريع 100%)
         page.route("**/*", lambda route: route.abort() 
-                   if route.request.resource_type in ["image", "media", "font"] 
+                   if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
                    else route.continue_())
 
         try:
-            # استخدام رابط فيسبوك الموبايل (أخف وأسرع)
-            url = f"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country={country}&q={keyword}"
+            # استخدام رابط الموبايل (أخف)
+            url = f"https://m.facebook.com/ads/library/?active_status=active&ad_type=all&country={country}&q={keyword}"
             
-            # زيادة وقت الانتظار لـ 60 ثانية
-            page.goto(url, timeout=60000, wait_until="domcontentloaded")
+            # وقت انتظار 60 ثانية
+            page.goto(url, timeout=60000)
+            page.wait_for_timeout(2000)
             
-            # انتظار بسيط
-            page.wait_for_timeout(3000)
-            
-            # أخذ العنوان كدليل على النجاح (بدل لقطة الشاشة الثقيلة حالياً)
             page_title = page.title()
             
-            # تخزين النتيجة
             scan_data = {
                 "keyword": keyword,
                 "scan_date": datetime.datetime.now(),
                 "status": "Success",
                 "page_title": page_title,
-                "note": "تم البحث بنجاح (وضع توفير الذاكرة)"
+                "note": "تم (وضع توفير الذاكرة)"
             }
-            ads_col.insert_one(scan_data)
+            
+            # حفظ فقط إذا كان الاتصال سليماً
+            if 'ads_col' in globals():
+                ads_col.insert_one(scan_data)
             
             return {"status": "success", "data": scan_data}
 
@@ -65,7 +76,7 @@ def hunt_facebook_ads(keyword, country="DZ"):
 
 @app.route('/')
 def index():
-    return "<h1>🦅 Ad Hunter Lite is Ready!</h1>"
+    return "<h1>🦅 Ad Hunter is Ready (Fix Applied)</h1>"
 
 @app.route('/scan', methods=['GET'])
 def scan_endpoint():
