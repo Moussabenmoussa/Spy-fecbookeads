@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # --- إعدادات Gemini AI المجاني ---
 # ملاحظة: إذا توقف AI عن العمل بسبب ضغط الطلبات، سيبقى جلب الإعلانات يعمل بشكل طبيعي
-os.environ["GEMINI_API_KEY"] = "AIzaSyDApm1SX0Nz_cuWE0I65t3ydz-wfPloSnM"
+os.environ["GEMINI_API_KEY"] = "AIzaSyBhs95Cm5Rt_XwtS_RiM84dxKL88bmEAAk"
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-1.5-flash')
 
