@@ -8,10 +8,50 @@ app = Flask(__name__)
 # NICHES
 # =========================
 NICHES = {
-    "home": ["Cuisine", "Maison", "Nettoyage", "Décoration", "Outil"],
-    "beauty": ["Soins", "Visage", "Cheveux", "Beauté", "Parfum"],
-    "tech": ["Montre", "Écouteurs", "Bluetooth", "Chargeur", "Gadget"],
-    "kids": ["Jouet", "Bébé", "Enfant", "Éducatif", "Jeu"]
+    "home": [
+        "Cuisine", "Maison", "Nettoyage", "Décoration", "Outil",
+        "مطبخ", "بيت", "تنظيف", "ديكور", "أدوات منزلية",
+        "تحف", "مستلزمات", "ترتيب", "تجهيزات منزلية",
+        "أواني", "أثاث", "سجاد", "ستائر", "أدوات تنظيف",
+        "Maison pratique", "Ustensiles", "Décoration intérieure", "Rangement"
+    ],
+    "beauty": [
+        "Soins", "Visage", "Cheveux", "Beauté", "Parfum",
+        "تجميل", "عناية", "بشرة", "شعر", "عطور",
+        "ميكاب", "كريمات", "صبغات", "ماسكات",
+        "مستحضرات تجميل", "صالون", "عناية يومية", "منتجات طبيعية",
+        "Crèmes", "Shampoing", "Huile cheveux", "Makeup", "Parfums"
+    ],
+    "tech": [
+        "Montre", "Écouteurs", "Bluetooth", "Chargeur", "Gadget",
+        "ساعات ذكية", "سماعات", "بلوتوث", "شواحن", "أجهزة",
+        "تكنولوجيا", "إلكترونيات", "هواتف", "كاميرات",
+        "Laptop", "Ordinateur", "Clavier", "موس", "أجهزة لوحية",
+        "Powerbank", "Accessoires téléphones", "Smartwatch"
+    ],
+    "kids": [
+        "Jouet", "Bébé", "Enfant", "Éducatif", "Jeu",
+        "ألعاب", "طفل", "رضيع", "تعليمي", "أنشطة للأطفال",
+        "دمى", "سيارات صغيرة", "تعليمية", "ألغاز",
+        "Puzzle", "Figurines", "Coloriage", "Livre enfant", "Jeux éducatifs"
+    ],
+    "fashion": [
+        "Sac", "Chaussures", "Vêtement", "Homme", "Femme",
+        "حقائب", "أحذية", "ملابس", "رجالي", "نسائي",
+        "إكسسوارات", "جواكت", "فساتين", "تيشورتات",
+        "Shirts", "Pantalon", "Mode", "Bijoux", "Lunettes"
+    ],
+    "sports": [
+        "Sport", "Fitness", "Gym", "Équipement", "Running",
+        "رياضة", "تمارين", "جيم", "معدات رياضية", "كورة",
+        "حذاء رياضي", "ملابس رياضية", "كرة قدم", "دراجات",
+        "Tapis yoga", "Haltères", "Vêtements fitness"
+    ],
+    "food": [
+        "Alimentation", "Snack", "Boisson", "Gâteau", "Pâtisserie",
+        "أكل", "مأكولات", "مشروبات", "حلويات", "معجنات",
+        "Snack healthy", "Fast food", "Fruits", "Légumes", "Juice"
+    ]
 }
 
 # =========================
