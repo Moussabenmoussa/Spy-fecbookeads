@@ -7,29 +7,14 @@ import random
 
 app = Flask(__name__)
 
-# --- القواميس الذكية (Smart Dictionaries) ---
-# بدلاً من قائمة واحدة، لدينا قوائم متخصصة
+# --- قوائم البحث "الجوكر" (Broad Match) ---
+# هذه الكلمات موجودة في ملايين الإعلانات، مما يضمن ظهور نتائج دائماً
 NICHES = {
-    "home": [
-        "Cuisine", "Mixeur", "Hachoir", "Organisateur", "Salle de bain", 
-        "Nettoyage", "Mop", "Décoration", "Lampe", "Outil"
-    ],
-    "beauty": [
-        "Soins visage", "Anti rides", "Cheveux", "Lisseur", "Épilateur", 
-        "Maquillage", "Parfum", "Blanchiment", "Massager"
-    ],
-    "tech": [
-        "Smart watch", "Écouteurs", "Bluetooth", "Support voiture", "Chargeur", 
-        "Caméra", "Projecteur", "Gadget", "Power bank"
-    ],
-    "kids": [
-        "Jouet", "Bébé", "Éducatif", "Enfant", "Peluche", 
-        "Cartable", "Tablette enfant", "Puzzle"
-    ],
-    "fashion": [
-        "Sac", "Chaussures", "Montre homme", "Vêtement", "Hijab", 
-        "Ensemble", "Pyjama", "Orthopédique"
-    ]
+    "home": ["Cuisine", "Maison", "Nettoyage", "Décoration", "Outil"],
+    "beauty": ["Soins", "Visage", "Cheveux", "Beauté", "Parfum"],
+    "tech": ["Montre", "Écouteurs", "Bluetooth", "Chargeur", "Gadget"],
+    "kids": ["Jouet", "Bébé", "Enfant", "Éducatif", "Jeu"],
+    "fashion": ["Sac", "Chaussures", "Vêtement", "Homme", "Femme"]
 }
 
 HTML_TEMPLATE = """
@@ -38,93 +23,72 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DZ Ad Hunter - Niches 🎯</title>
+    <title>DZ Ad Hunter 🚀</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; margin: 0; padding: 0; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         
-        .header { text-align: center; margin-bottom: 40px; }
-        .header h1 { color: #2c3e50; font-weight: 800; font-size: 2.5rem; }
-        .header p { color: #7f8c8d; font-size: 1.1rem; }
+        /* 1. الهيدر وشريط البحث في الأعلى تماماً */
+        .top-section { background: white; padding: 30px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 30px; }
+        .top-section h1 { margin: 0 0 10px 0; color: #1a73e8; }
+        .top-section p { color: #666; margin-bottom: 25px; }
+
+        /* شريط البحث اليدوي */
+        .search-bar { display: flex; gap: 10px; justify-content: center; max-width: 600px; margin: 0 auto 20px; }
+        input { flex: 1; padding: 15px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #1a73e8; }
+        .btn-main { background: #1a73e8; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .btn-main:hover { background: #1557b0; }
+
+        /* أزرار النيش (التصنيفات) */
+        .niche-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-niche { background: #e8f0fe; color: #1a73e8; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-niche:hover { background: #d2e3fc; transform: translateY(-2px); }
+
+        /* منطقة النتائج */
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
-        /* شبكة التصنيفات */
-        .niche-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 40px; }
+        .ad-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e0e0e0; transition: transform 0.2s; position: relative; }
+        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
         
-        .niche-btn {
-            background: white; border: none; padding: 20px; border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.3s ease;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-        .niche-btn:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        .niche-btn:active { transform: scale(0.95); }
+        .badge { position: absolute; top: 10px; left: 10px; padding: 5px 10px; border-radius: 15px; color: white; font-size: 11px; font-weight: bold; }
+        .badge-winner { background: #34a853; } /* أخضر */
+        .badge-test { background: #fbbc04; color: #333; } /* أصفر */
+
+        .ad-body { padding: 20px; }
+        .ad-meta { font-size: 12px; color: #888; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .ad-text { font-size: 14px; line-height: 1.6; color: #333; min-height: 60px; }
         
-        .icon { font-size: 2rem; }
-        .label { font-weight: bold; color: #34495e; }
-        
-        /* البحث اليدوي */
-        .manual-search { background: white; padding: 15px; border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; max-width: 600px; margin: 0 auto 40px; }
-        input { flex: 1; border: none; padding: 10px 20px; font-size: 16px; outline: none; border-radius: 50px; }
-        .search-btn { background: #3498db; color: white; border: none; padding: 10px 30px; border-radius: 50px; cursor: pointer; font-weight: bold; }
-        
-        /* النتائج */
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        
-        .ad-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08); position: relative; transition: transform 0.2s; }
-        .ad-card:hover { transform: translateY(-5px); }
-        
-        .badge { position: absolute; top: 15px; left: 15px; padding: 6px 12px; border-radius: 20px; color: white; font-weight: bold; font-size: 11px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .badge-winner { background: #2ecc71; }
-        .badge-test { background: #f1c40f; color: #333; }
-        
-        .ad-content { padding: 20px; }
-        .ad-meta { display: flex; justify-content: space-between; font-size: 12px; color: #95a5a6; margin-bottom: 10px; }
-        .ad-text { color: #2c3e50; line-height: 1.6; font-size: 14px; min-height: 80px; }
-        
-        .loader { display: none; margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loader { display: none; margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .status-msg { text-align: center; font-weight: bold; color: #7f8c8d; margin-top: 20px; }
+        .status-msg { text-align: center; color: #555; margin: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div class="top-section">
+    <h1>🦅 DZ Ad Hunter</h1>
+    <p>محرك البحث الذكي عن المنتجات الرابحة</p>
+    
+    <div class="search-bar">
+        <input type="text" id="keyword" placeholder="بحث عن منتج (مثلاً: ساعة)...">
+        <button onclick="startScan('manual')" class="btn-main" id="searchBtn">بحث</button>
+    </div>
+
+    <p style="font-size: 14px; color:#999;">أو اختر قسماً للبحث التلقائي:</p>
+    
+    <div class="niche-buttons">
+        <button onclick="startScan('niche', 'home')" class="btn-niche">🏠 المنزل</button>
+        <button onclick="startScan('niche', 'beauty')" class="btn-niche">💄 تجميل</button>
+        <button onclick="startScan('niche', 'tech')" class="btn-niche">📱 إلكترونيات</button>
+        <button onclick="startScan('niche', 'kids')" class="btn-niche">👶 أطفال</button>
+        <button onclick="startScan('niche', 'fashion')" class="btn-niche">👗 ملابس</button>
+    </div>
+</div>
+
 <div class="container">
-    <div class="header">
-        <h1>🦅 DZ Ad Hunter</h1>
-        <p>اختر المجال الذي تريد العمل فيه، وسنجد لك المنتج الرابح</p>
-    </div>
-
-    <div class="niche-grid">
-        <button onclick="startScan('niche', 'home')" class="niche-btn">
-            <span class="icon">🏠</span>
-            <span class="label">المنزل والمطبخ</span>
-        </button>
-        <button onclick="startScan('niche', 'beauty')" class="niche-btn">
-            <span class="icon">💄</span>
-            <span class="label">الجمال والعناية</span>
-        </button>
-        <button onclick="startScan('niche', 'tech')" class="niche-btn">
-            <span class="icon">📱</span>
-            <span class="label">إلكترونيات</span>
-        </button>
-        <button onclick="startScan('niche', 'kids')" class="niche-btn">
-            <span class="icon">👶</span>
-            <span class="label">أطفال وألعاب</span>
-        </button>
-        <button onclick="startScan('niche', 'fashion')" class="niche-btn">
-            <span class="icon">👗</span>
-            <span class="label">أزياء وموضة</span>
-        </button>
-    </div>
-
-    <div class="manual-search">
-        <input type="text" id="keyword" placeholder="أو ابحث عن منتج محدد...">
-        <button onclick="startScan('manual')" class="search-btn">بحث</button>
-    </div>
-
     <div class="loader" id="loader"></div>
     <div id="statusMsg" class="status-msg"></div>
-
     <div class="results-grid" id="results"></div>
 </div>
 
@@ -142,12 +106,10 @@ HTML_TEMPLATE = """
             endpoint = `/scan?q=${val}`;
             status.innerText = `🔎 جاري البحث عن: ${val}...`;
         } else {
-            // بحث حسب النيش
             endpoint = `/discover?niche=${nicheType}`;
-            status.innerText = `🤖 الروبوت يبحث عن منتجات رابحة في قسم: ${nicheType}...`;
+            status.innerText = `🤖 جاري البحث في قسم: ${nicheType}...`;
         }
 
-        // تعطيل الأزرار مؤقتاً (اختياري)
         loader.style.display = "block";
         resultsDiv.innerHTML = "";
         
@@ -156,12 +118,8 @@ HTML_TEMPLATE = """
             const json = await response.json();
 
             if (json.status === "success") {
-                if (mode === 'manual') {
-                    status.innerText = `✅ النتائج: ${json.count}`;
-                } else {
-                    status.innerHTML = `✅ الكلمة المختارة: <b style="color:#e67e22">${json.keyword}</b> | النتائج: ${json.count}`;
-                }
-
+                status.innerHTML = `✅ النتائج: ${json.count} | الكلمة: <b style="color:#1a73e8">${json.keyword || 'مخصص'}</b>`;
+                
                 json.data.forEach(ad => {
                     let badgeHTML = ad.is_winner 
                         ? `<span class="badge badge-winner">🔥 WINNER (+${ad.days_running} Days)</span>` 
@@ -170,7 +128,7 @@ HTML_TEMPLATE = """
                     resultsDiv.innerHTML += `
                         <div class="ad-card">
                             ${badgeHTML}
-                            <div class="ad-content">
+                            <div class="ad-body">
                                 <div class="ad-meta">
                                     <span>📅 ${ad.start_date}</span>
                                     <span>ID: ${ad.id}</span>
@@ -184,7 +142,7 @@ HTML_TEMPLATE = """
                 status.innerText = `⚠️ ${json.msg}`;
             }
         } catch (err) {
-            status.innerText = "❌ خطأ في الاتصال";
+            status.innerText = "❌ خطأ في الاتصال بالسيرفر.";
         } finally {
             loader.style.display = "none";
         }
@@ -195,7 +153,7 @@ HTML_TEMPLATE = """
 """
 
 def analyze_ad(raw_text):
-    # دالة التحليل
+    # استخراج البيانات
     id_match = re.search(r'ID: (\d+)', raw_text)
     ad_id = id_match.group(1) if id_match else "N/A"
     
@@ -209,12 +167,18 @@ def analyze_ad(raw_text):
         try:
             ad_date = datetime.strptime(start_date_str, "%b %d, %Y")
             days_running = (datetime.now() - ad_date).days
-            if days_running >= 5: is_winner = True
+            if days_running >= 4: is_winner = True
         except: pass
 
+    # تنظيف النص
     clean_text = raw_text
     if "Platforms" in raw_text: clean_text = raw_text.split("Platforms")[1]
-    clean_text = clean_text.replace("Open Dropdown", "").replace("Sponsored", "")[:120] + "..."
+    
+    # إزالة الكلمات الزائدة
+    for noise in ["Open Dropdown", "See ad details", "Sponsored", "Active", "Library ID"]:
+        clean_text = clean_text.replace(noise, "")
+        
+    clean_text = clean_text[:120] + "..."
 
     return {
         "id": ad_id, "start_date": start_date_str, "days_running": days_running,
@@ -224,25 +188,41 @@ def analyze_ad(raw_text):
 def core_hunter(keyword):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage'])
-        context = browser.new_context(viewport={'width': 1366, 'height': 768})
+        context = browser.new_context(viewport={'width': 1280, 'height': 800})
         page = context.new_page()
         try:
             url = f"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=DZ&q={keyword}"
-            page.goto(url, timeout=60000)
-            page.wait_for_timeout(5000)
             
+            # 1. زيادة وقت الانتظار (هام جداً للسيرفر المجاني)
+            page.goto(url, timeout=90000) 
+            page.wait_for_timeout(8000) # انتظار 8 ثواني كاملة للتحميل
+            
+            # 2. مصفاة واسعة جداً (Broad Selector)
+            # بدلاً من البحث عن نص محدد قد يتغير، نبحث عن أي كارت إعلان
             raw_ads = page.evaluate("""() => {
                 const divs = Array.from(document.querySelectorAll('div'));
-                const cards = divs.filter(d => d.innerText.includes('Library ID:') && d.innerText.length > 50 && d.innerText.length < 800);
+                
+                // نبحث عن أي ديف يحتوي على كلمة ID ورقم، أو كلمة Started running
+                // هذا يضمن التقاط الإعلان سواء كان بالإنجليزية أو غيرها
+                const cards = divs.filter(d => 
+                    (d.innerText.includes('Library ID') || d.innerText.includes('Started running')) 
+                    && d.innerText.length > 40 
+                    && d.innerText.length < 800
+                );
+                
+                // إزالة التكرار
                 return [...new Set(cards.map(c => c.innerText))].slice(0, 8);
             }""")
             
             if len(raw_ads) == 0: return None
             
             analyzed = [analyze_ad(raw) for raw in raw_ads]
+            # ترتيب النتائج: الرابح أولاً
             analyzed.sort(key=lambda x: x['days_running'], reverse=True)
             return analyzed
-        except: return None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
         finally: browser.close()
 
 @app.route('/')
@@ -254,20 +234,15 @@ def scan_endpoint():
     query = request.args.get('q', 'Livraison')
     results = core_hunter(query)
     if results:
-        return jsonify({"status": "success", "count": len(results), "data": results})
-    return jsonify({"status": "empty", "msg": "لم يتم العثور على نتائج."})
+        return jsonify({"status": "success", "count": len(results), "keyword": query, "data": results})
+    return jsonify({"status": "empty", "msg": "الصفحة ثقيلة ولم تفتح في الوقت المحدد، حاول مرة أخرى."})
 
 @app.route('/discover', methods=['GET'])
 def discover_endpoint():
-    # استقبال نوع النيش من الزر
     niche_type = request.args.get('niche', 'home')
-    
-    # اختيار كلمة عشوائية من النيش المحدد فقط
-    # إذا لم يكن النيش موجوداً نستخدم المنزل كافتراضي
+    # اختيار كلمة مضمونة من القائمة
     keywords_list = NICHES.get(niche_type, NICHES['home'])
     random_keyword = random.choice(keywords_list)
-    
-    print(f"🎯 Niche: {niche_type} | Keyword: {random_keyword}")
     
     results = core_hunter(random_keyword)
     
@@ -279,7 +254,7 @@ def discover_endpoint():
             "data": results
         })
     
-    return jsonify({"status": "empty", "msg": f"جرب مرة أخرى (بحثنا عن '{random_keyword}')."})
+    return jsonify({"status": "empty", "msg": f"حاول مرة أخرى (بحثنا عن '{random_keyword}' ولم نلتقط شيئاً)."})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
