@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 app = Flask(__name__)
 
 # --- إعدادات الذكاء الاصطناعي ---
-os.environ["GEMINI_API_KEY"] = "AIzaSyDApm1SX0Nz_cuWE0I65t3ydz-wfPloSnM"
+os.environ["GEMINI_API_KEY"] = "AIzaSyDV8pA6K4mFs0vnRwjtEKEdTJyJkUby9IU"
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-pro')
 
