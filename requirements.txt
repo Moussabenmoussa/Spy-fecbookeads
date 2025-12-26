@@ -2,3 +2,7 @@ flask
 pymongo
 playwright
 gunicorn
+google-generativeai
+flask
+playwright
+gunicorn
