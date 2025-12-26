@@ -43,230 +43,98 @@ NICHES = {
     ]
 }
 
-HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ad Spy DZ – Professional</title>
-
-<style>
-body{
-    margin:0;
-    font-family:Segoe UI, Tahoma;
-    background:#0f1220;
-    color:#e5e7eb;
-}
-.container{
-    max-width:1100px;
-    margin:auto;
-    padding:25px;
-}
-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:25px;
-}
-.logo{
-    font-size:22px;
-    font-weight:bold;
-    color:#22c55e;
-}
-.badge{
-    background:#1f2937;
-    padding:6px 12px;
-    border-radius:6px;
-    font-size:13px;
-    color:#9ca3af;
-}
-.panel{
-    background:#111827;
-    border-radius:12px;
-    padding:20px;
-    margin-bottom:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,.4);
-}
-.search-row{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-}
-.search-row input,
-.search-row select{
-    flex:1;
-    padding:12px;
-    border-radius:8px;
-    border:none;
-    background:#1f2937;
-    color:#e5e7eb;
-    font-size:15px;
-}
-.search-row button{
-    padding:12px 22px;
-    border:none;
-    border-radius:8px;
-    background:#22c55e;
-    color:#000;
-    font-weight:bold;
-    cursor:pointer;
-}
-.categories{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:15px;
-}
-.categories button{
-    background:#1f2937;
-    color:#e5e7eb;
-    border:none;
-    padding:10px 18px;
-    border-radius:8px;
-    cursor:pointer;
-}
-.categories button:hover{
-    background:#2563eb;
-}
-.loader{
-    display:none;
-    margin:30px auto;
-    border:5px solid #1f2937;
-    border-top:5px solid #22c55e;
-    border-radius:50%;
-    width:45px;
-    height:45px;
-    animation:spin 1s linear infinite;
-}
-@keyframes spin{100%{transform:rotate(360deg)}}
-#status{
-    text-align:center;
-    margin-top:10px;
-    color:#22c55e;
-}
-.card{
-    background:#020617;
-    border:1px solid #1f2937;
-    padding:18px;
-    border-radius:12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:12px;
-}
-.card span{
-    color:#9ca3af;
-    font-size:14px;
-}
-.card a{
-    background:#2563eb;
-    color:white;
-    padding:8px 16px;
-    border-radius:6px;
-    text-decoration:none;
-    font-weight:bold;
-}
-.card a:hover{
-    background:#1d4ed8;
-}
-footer{
-    text-align:center;
-    margin-top:30px;
-    font-size:13px;
-    color:#6b7280;
-}
-</style>
-</head>
-
-<body>
+HTML_TEMPLATE = """<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Direct Ad Links 🔗</title><style>body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;margin:0;padding:20px;text-align:center}.container{max-width:800px;margin:0 auto}.btn-main{background:#1877f2;color:white;padding:12px 25px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin:5px}.card{background:white;padding:20px;margin:15px 0;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);display:flex;justify-content:between;align-items:center}.link-btn{text-decoration:none;background:#42b72a;color:white;padding:10px 20px;border-radius:5px;font-weight:bold}.id-text{color:#666;font-size:14px}.loader{display:none;margin:20px auto;border:4px solid #f3f3f3;border-top:4px solid #1877f2;border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head><body>
 <div class="container">
-
-<header>
-    <div class="logo">🕵️ Ad Spy DZ</div>
-    <div class="badge">META ADS • DZ MARKET</div>
-</header>
-
-<div class="panel">
-    <div class="search-row">
-        <input id="keywordInput" placeholder="🔍 كلمة مفتاحية (مثال: Cuisine, Offre, Montre)">
-        <select id="typeFilter">
-            <option>الكل</option>
-            <option>COD</option>
-            <option>عرض</option>
-            <option>خصم</option>
-        </select>
-        <select>
-            <option>10 نتائج</option>
-            <option>20 نتائج</option>
-            <option>50 نتائج</option>
-        </select>
-        <button onclick="searchKeyword()">بحث</button>
+    <h1>🔗 كاشف روابط الإعلانات</h1>
+    <p>اختر المجال وسأعطيك روابط مباشرة للإعلانات الرابحة</p>
+    <div>
+        <button onclick="scan('home')" class="btn-main">🏠 منزل</button>
+        <button onclick="scan('beauty')" class="btn-main">💄 تجميل</button>
+        <button onclick="scan('tech')" class="btn-main">📱 تقنية</button>
+        <button onclick="scan('kids')" class="btn-main">👶 أطفال</button>
     </div>
-
-    <div class="categories">
-        <button onclick="scan('home')">🏠 Home</button>
-        <button onclick="scan('beauty')">💄 Beauty</button>
-        <button onclick="scan('tech')">📱 Tech</button>
-        <button onclick="scan('kids')">👶 Kids</button>
-        <button onclick="scan('fashion')">👗 Fashion</button>
-        <button onclick="scan('sports')">🏋️ Sports</button>
-        <button onclick="scan('food')">🍔 Food</button>
-    </div>
+    <div class="loader" id="loader"></div>
+    <div id="status" style="margin-top:20px;font-weight:bold;color:#555"></div>
+    <div id="results"></div>
 </div>
-
-<div class="loader" id="loader"></div>
-<div id="status"></div>
-<div id="results"></div>
-
-<footer>
-    Ad Spy DZ © 2025 – Internal Intelligence Tool
-</footer>
-
-</div>
-
 <script>
 async function scan(n){
-    loader.style.display='block';
-    results.innerHTML='';
-    status.innerText='Scanning niche: '+n+' ...';
-    const r=await fetch('/get_links?niche='+n);
-    const d=await r.json();
-    loader.style.display='none';
-    if(d.status==='success'){
-        status.innerText='Found '+d.count+' winning ads';
-        d.links.forEach(l=>{
-            results.innerHTML+=`
-            <div class="card">
-                <span>Ad ID: ${l.id}</span>
-                <a target="_blank" href="${l.url}">Open Ad</a>
-            </div>`;
-        });
-    }else status.innerText='No results';
+    document.getElementById('loader').style.display='block';
+    document.getElementById('results').innerHTML='';
+    const s = document.getElementById('status');
+    s.innerText = `جاري سحب الروابط لقسم: ${n}...`;
+    
+    try {
+        const res = await fetch(`/get_links?niche=${n}`);
+        const data = await res.json();
+        if(data.status==='success'){
+            s.innerHTML = `✅ تم العثور على ${data.count} إعلانات (الكلمة: ${data.keyword})`;
+            data.links.forEach(link => {
+                document.getElementById('results').innerHTML += `
+                <div class="card">
+                    <span class="id-text">ID: ${link.id}</span>
+                    <a href="${link.url}" target="_blank" class="link-btn">🔗 فتح الإعلان في فيسبوك</a>
+                </div>`;
+            });
+        } else { s.innerText = "⚠️ لم يتم العثور على روابط، حاول مرة أخرى."; }
+    } catch(e) { s.innerText = "❌ خطأ في الاتصال"; }
+    finally { document.getElementById('loader').style.display='none'; }
 }
+</script></body></html>"""
 
-async function searchKeyword(){
-    const k=keywordInput.value.trim();
-    if(!k)return alert('أدخل كلمة');
-    loader.style.display='block';
-    results.innerHTML='';
-    status.innerText='Searching: '+k;
-    const r=await fetch('/get_links?niche=home');
-    const d=await r.json();
-    loader.style.display='none';
-    if(d.status==='success'){
-        status.innerText='Results for '+k;
-        d.links.forEach(l=>{
-            results.innerHTML+=`
-            <div class="card">
-                <span>Ad ID: ${l.id}</span>
-                <a target="_blank" href="${l.url}">Open Ad</a>
-            </div>`;
-        });
-    }
-}
-</script>
+def get_direct_links(keyword):
+    with sync_playwright() as p:
+        # إعدادات قصوى لتوفير الرام
+        b = p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
+        )
+        # نغلق تحميل كل شيء ما عدا الهيكل الأساسي
+        page = b.new_context().new_page()
+        page.route("**/*", lambda r: r.abort() if r.request.resource_type in ["image", "media", "font", "stylesheet"] else r.continue_())
 
-</body>
-</html>
-"""
+        try:
+            # نذهب لصفحة البحث
+            page.goto(f"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=DZ&q={keyword}", timeout=60000)
+            page.wait_for_timeout(5000)
+
+            # نسحب فقط النصوص التي تحتوي على ID
+            raw_ids = page.evaluate("""() => {
+                const divs = Array.from(document.querySelectorAll('div'));
+                // نبحث عن النص الذي يحتوي على ID فقط
+                const idTexts = divs.filter(d => d.innerText.includes('ID:') && d.innerText.length < 100);
+                return [...new Set(idTexts.map(c => c.innerText))].slice(0, 10);
+            }""")
+
+            links = []
+            for text in raw_ids:
+                # استخراج الرقم فقط
+                match = re.search(r'ID: (\d+)', text)
+                if match:
+                    ad_id = match.group(1)
+                    # صنع الرابط المباشر
+                    links.append({
+                        "id": ad_id,
+                        "url": f"https://www.facebook.com/ads/library/?id={ad_id}"
+                    })
+            
+            return links
+        except: return []
+        finally: b.close()
+
+@app.route('/')
+def index(): return render_template_string(HTML_TEMPLATE)
+
+@app.route('/get_links')
+def get_links():
+    niche = request.args.get('niche', 'home')
+    keyword = random.choice(NICHES.get(niche, NICHES['home']))
+    links = get_direct_links(keyword)
+    
+    if links:
+        return jsonify({"status": "success", "count": len(links), "keyword": keyword, "links": links})
+    return jsonify({"status": "empty"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
 
