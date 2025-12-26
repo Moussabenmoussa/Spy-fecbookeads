@@ -1,200 +1,271 @@
+import os, re, random
+from flask import Flask, jsonify, request, render_template_string
+from playwright.sync_api import sync_playwright
+
+app = Flask(__name__)
+
+# قوائم الكلمات
+NICHES = {
+    "home": [
+        "Cuisine", "Maison", "Nettoyage", "Décoration", "Outil",
+        "Ustensiles", "Décoration intérieure", "Rangement", "Maison pratique",
+        "مطبخ DZ", "ديكور DZ", "أدوات منزلية", "تنظيف", "عرض", "خصم", "توصيل"
+    ],
+    "beauty": [
+        "Soins", "Visage", "Cheveux", "Beauté", "Parfum",
+        "Makeup", "Cosmétiques", "Shampoing", "Huile cheveux",
+        "تجميل DZ", "بشرة", "شعر", "كريمات", "ماسكات", "عرض", "خصم", "توصيل"
+    ],
+    "tech": [
+        "Montre", "Écouteurs", "Bluetooth", "Chargeur", "Gadget",
+        "Smartwatch", "Powerbank", "Accessoires téléphones", "Laptop", "Ordinateur",
+        "سماعات DZ", "شواحن", "هواتف", "أجهزة", "عرض", "خصم", "توصيل"
+    ],
+    "kids": [
+        "Jouet", "Bébé", "Enfant", "Éducatif", "Jeu",
+        "Puzzle", "Figurines", "Coloriage", "Livre enfant", "Jeux éducatifs",
+        "ألعاب DZ", "طفل", "رضيع", "تعليمي", "أنشطة للأطفال", "عرض", "خصم", "توصيل"
+    ],
+    "fashion": [
+        "Sac", "Chaussures", "Vêtement", "Homme", "Femme",
+        "Shirts", "Pantalon", "Mode", "Bijoux", "Lunettes",
+        "حقائب DZ", "أحذية", "ملابس", "رجالي", "نسائي", "عرض", "خصم", "توصيل"
+    ],
+    "sports": [
+        "Sport", "Fitness", "Gym", "Équipement", "Running",
+        "Tapis yoga", "Haltères", "Vêtements fitness", "Basket", "Football",
+        "رياضة DZ", "تمارين", "جيم", "معدات رياضية", "حذاء رياضي", "عرض", "خصم", "توصيل"
+    ],
+    "food": [
+        "Alimentation", "Snack", "Boisson", "Gâteau", "Pâtisserie",
+        "Fast food", "Fruits", "Légumes", "Juice", "Snack healthy",
+        "أكل DZ", "حلويات", "معجنات", "مشروبات", "عرض", "خصم", "توصيل"
+    ]
+}
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spy Ad Tool 🔗</title>
+<title>Ad Spy DZ – Professional</title>
+
 <style>
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #1e1e2f;
-    color: #eee;
-    margin: 0;
-    padding: 20px;
+body{
+    margin:0;
+    font-family:Segoe UI, Tahoma;
+    background:#0f1220;
+    color:#e5e7eb;
 }
-.container {
-    max-width: 900px;
-    margin: 0 auto;
+.container{
+    max-width:1100px;
+    margin:auto;
+    padding:25px;
 }
-h1 {
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 10px;
-    color: #42b72a;
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
 }
-p {
-    text-align: center;
-    color: #aaa;
-    margin-bottom: 20px;
+.logo{
+    font-size:22px;
+    font-weight:bold;
+    color:#22c55e;
 }
-.input-group {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
+.badge{
+    background:#1f2937;
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:13px;
+    color:#9ca3af;
 }
-input[type="text"] {
-    padding: 10px 15px;
-    width: 60%;
-    border-radius: 8px 0 0 8px;
-    border: none;
-    font-size: 16px;
-    outline: none;
+.panel{
+    background:#111827;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
 }
-button.search-btn {
-    padding: 10px 20px;
-    background: #42b72a;
-    color: white;
-    border: none;
-    border-radius: 0 8px 8px 0;
-    cursor: pointer;
-    font-size: 16px;
+.search-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
 }
-.categories {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px;
+.search-row input,
+.search-row select{
+    flex:1;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    background:#1f2937;
+    color:#e5e7eb;
+    font-size:15px;
 }
-.btn-main {
-    background: #1877f2;
-    color: white;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    margin: 5px;
-    transition: 0.3s;
+.search-row button{
+    padding:12px 22px;
+    border:none;
+    border-radius:8px;
+    background:#22c55e;
+    color:#000;
+    font-weight:bold;
+    cursor:pointer;
 }
-.btn-main:hover {
-    background: #0f5bb5;
+.categories{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:15px;
 }
-.loader {
-    display: none;
-    margin: 20px auto;
-    border: 4px solid #333;
-    border-top: 4px solid #42b72a;
-    border-radius: 50%;
-    width: 35px;
-    height: 35px;
-    animation: spin 1s linear infinite;
+.categories button{
+    background:#1f2937;
+    color:#e5e7eb;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
 }
-@keyframes spin {
-    0% {transform: rotate(0deg);}
-    100% {transform: rotate(360deg);}
+.categories button:hover{
+    background:#2563eb;
 }
-#results {
-    margin-top: 20px;
+.loader{
+    display:none;
+    margin:30px auto;
+    border:5px solid #1f2937;
+    border-top:5px solid #22c55e;
+    border-radius:50%;
+    width:45px;
+    height:45px;
+    animation:spin 1s linear infinite;
 }
-.card {
-    background: #2e2e3e;
-    padding: 20px;
-    margin: 15px 0;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+@keyframes spin{100%{transform:rotate(360deg)}}
+#status{
+    text-align:center;
+    margin-top:10px;
+    color:#22c55e;
 }
-.link-btn {
-    text-decoration: none;
-    background: #42b72a;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-weight: bold;
-    transition: 0.3s;
+.card{
+    background:#020617;
+    border:1px solid #1f2937;
+    padding:18px;
+    border-radius:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
 }
-.link-btn:hover {
-    background: #2e8b2e;
+.card span{
+    color:#9ca3af;
+    font-size:14px;
 }
-.id-text {
-    color: #aaa;
-    font-size: 14px;
+.card a{
+    background:#2563eb;
+    color:white;
+    padding:8px 16px;
+    border-radius:6px;
+    text-decoration:none;
+    font-weight:bold;
 }
-#status {
-    font-weight: bold;
-    color: #42b72a;
-    margin-bottom: 10px;
-    text-align: center;
+.card a:hover{
+    background:#1d4ed8;
+}
+footer{
+    text-align:center;
+    margin-top:30px;
+    font-size:13px;
+    color:#6b7280;
 }
 </style>
 </head>
+
 <body>
 <div class="container">
-    <h1>Spy Ad Tool 🔗</h1>
-    <p>اختر المجال أو ابحث بالكلمة المفتاحية للحصول على الإعلانات الرابحة</p>
-    
-    <div class="input-group">
-        <input type="text" id="keywordInput" placeholder="أدخل كلمة مفتاحية...">
-        <button class="search-btn" onclick="searchKeyword()">بحث</button>
+
+<header>
+    <div class="logo">🕵️ Ad Spy DZ</div>
+    <div class="badge">META ADS • DZ MARKET</div>
+</header>
+
+<div class="panel">
+    <div class="search-row">
+        <input id="keywordInput" placeholder="🔍 كلمة مفتاحية (مثال: Cuisine, Offre, Montre)">
+        <select id="typeFilter">
+            <option>الكل</option>
+            <option>COD</option>
+            <option>عرض</option>
+            <option>خصم</option>
+        </select>
+        <select>
+            <option>10 نتائج</option>
+            <option>20 نتائج</option>
+            <option>50 نتائج</option>
+        </select>
+        <button onclick="searchKeyword()">بحث</button>
     </div>
 
     <div class="categories">
-        <button onclick="scan('home')" class="btn-main">🏠 منزل</button>
-        <button onclick="scan('beauty')" class="btn-main">💄 تجميل</button>
-        <button onclick="scan('tech')" class="btn-main">📱 تقنية</button>
-        <button onclick="scan('kids')" class="btn-main">👶 أطفال</button>
-        <button onclick="scan('fashion')" class="btn-main">👗 أزياء</button>
-        <button onclick="scan('sports')" class="btn-main">🏋️ رياضة</button>
-        <button onclick="scan('food')" class="btn-main">🍔 أكل</button>
+        <button onclick="scan('home')">🏠 Home</button>
+        <button onclick="scan('beauty')">💄 Beauty</button>
+        <button onclick="scan('tech')">📱 Tech</button>
+        <button onclick="scan('kids')">👶 Kids</button>
+        <button onclick="scan('fashion')">👗 Fashion</button>
+        <button onclick="scan('sports')">🏋️ Sports</button>
+        <button onclick="scan('food')">🍔 Food</button>
     </div>
+</div>
 
-    <div class="loader" id="loader"></div>
-    <div id="status"></div>
-    <div id="results"></div>
+<div class="loader" id="loader"></div>
+<div id="status"></div>
+<div id="results"></div>
+
+<footer>
+    Ad Spy DZ © 2025 – Internal Intelligence Tool
+</footer>
+
 </div>
 
 <script>
 async function scan(n){
-    document.getElementById('loader').style.display='block';
-    document.getElementById('results').innerHTML='';
-    const s = document.getElementById('status');
-    s.innerText = `جاري سحب الروابط لقسم: ${n}...`;
-
-    try {
-        const res = await fetch(`/get_links?niche=${n}`);
-        const data = await res.json();
-        if(data.status==='success'){
-            s.innerHTML = `✅ تم العثور على ${data.count} إعلانات (الكلمة: ${data.keyword})`;
-            data.links.forEach(link => {
-                document.getElementById('results').innerHTML += `
-                <div class="card">
-                    <span class="id-text">ID: ${link.id}</span>
-                    <a href="${link.url}" target="_blank" class="link-btn">فتح الإعلان</a>
-                </div>`;
-            });
-        } else { s.innerText = "⚠️ لم يتم العثور على روابط، حاول مرة أخرى."; }
-    } catch(e) { s.innerText = "❌ خطأ في الاتصال"; }
-    finally { document.getElementById('loader').style.display='none'; }
+    loader.style.display='block';
+    results.innerHTML='';
+    status.innerText='Scanning niche: '+n+' ...';
+    const r=await fetch('/get_links?niche='+n);
+    const d=await r.json();
+    loader.style.display='none';
+    if(d.status==='success'){
+        status.innerText='Found '+d.count+' winning ads';
+        d.links.forEach(l=>{
+            results.innerHTML+=`
+            <div class="card">
+                <span>Ad ID: ${l.id}</span>
+                <a target="_blank" href="${l.url}">Open Ad</a>
+            </div>`;
+        });
+    }else status.innerText='No results';
 }
 
-async function searchKeyword() {
-    const keyword = document.getElementById('keywordInput').value.trim();
-    if(!keyword) return alert("أدخل كلمة مفتاحية للبحث!");
-    document.getElementById('loader').style.display='block';
-    document.getElementById('results').innerHTML='';
-    const s = document.getElementById('status');
-    s.innerText = `جاري البحث عن: ${keyword}...`;
-
-    try {
-        const res = await fetch(`/get_links?niche=custom&keyword=${encodeURIComponent(keyword)}`);
-        const data = await res.json();
-        if(data.status==='success'){
-            s.innerHTML = `✅ تم العثور على ${data.count} إعلانات (الكلمة: ${data.keyword})`;
-            data.links.forEach(link => {
-                document.getElementById('results').innerHTML += `
-                <div class="card">
-                    <span class="id-text">ID: ${link.id}</span>
-                    <a href="${link.url}" target="_blank" class="link-btn">فتح الإعلان</a>
-                </div>`;
-            });
-        } else { s.innerText = "⚠️ لم يتم العثور على روابط، حاول كلمة أخرى."; }
-    } catch(e){ s.innerText = "❌ خطأ في الاتصال"; }
-    finally { document.getElementById('loader').style.display='none'; }
+async function searchKeyword(){
+    const k=keywordInput.value.trim();
+    if(!k)return alert('أدخل كلمة');
+    loader.style.display='block';
+    results.innerHTML='';
+    status.innerText='Searching: '+k;
+    const r=await fetch('/get_links?niche=home');
+    const d=await r.json();
+    loader.style.display='none';
+    if(d.status==='success'){
+        status.innerText='Results for '+k;
+        d.links.forEach(l=>{
+            results.innerHTML+=`
+            <div class="card">
+                <span>Ad ID: ${l.id}</span>
+                <a target="_blank" href="${l.url}">Open Ad</a>
+            </div>`;
+        });
+    }
 }
 </script>
+
 </body>
 </html>
 """
