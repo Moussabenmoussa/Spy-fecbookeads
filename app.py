@@ -5,80 +5,65 @@ from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
-# --- تنظيف وإعداد قاعدة البيانات ---
+# --- إعدادات القاعدة ---
 raw_uri = os.getenv("MONGO_URI", "").strip()
 MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri)
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123").strip()
 
 try:
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    # تحديد اسم قاعدة البيانات صراحة لحل مشكلة No default database
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000)
     db = client['iptv_db'] 
     sources_col = db['sources']
     ads_col = db['ads']
     client.admin.command('ping')
-    print("✅ Connected to MongoDB")
-except Exception as e:
-    print(f"❌ MongoDB Error: {e}")
+except:
     sources_col = ads_col = None
 
-def get_clean_m3u(url):
+def fetch_m3u_content(url):
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-        r = requests.get(url, headers=headers, timeout=15, stream=True)
+        # استخدام User-Agent قوي جداً لتخطي حظر السيرفرات
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*'
+        }
+        r = requests.get(url, headers=headers, timeout=20, verify=False)
         if r.status_code == 200:
-            lines = []
-            for line in r.iter_lines():
-                if line:
-                    try:
-                        decoded_line = line.decode('utf-8', errors='ignore')
-                        if "#EXTM3U" not in decoded_line:
-                            lines.append(decoded_line)
-                    except: continue
-            return lines
+            # تنظيف المحتوى من أي فراغات زائدة
+            content = r.text.strip()
+            if "#EXTM3U" in content:
+                # نأخذ القنوات فقط ونحذف الرأس الأول لتجنب التكرار
+                lines = content.splitlines()
+                return "\n".join(lines[1:]) if "#EXTM3U" in lines[0] else content
     except Exception as e:
-        print(f"⚠️ Error fetching {url}: {e}")
-    return []
+        print(f"Fetch Error: {e}")
+    return ""
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Dashboard</title>
+    <title>IPTV Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white p-4 font-sans">
+<body class="bg-gray-900 text-white font-sans p-4">
     <div class="max-w-md mx-auto">
-        <h1 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2 text-blue-400 text-center">💎 لوحة تحكم النخبة</h1>
+        <h1 class="text-xl font-bold mb-6 text-center text-blue-400">💎 لوحة تحكم النخبة v4.0</h1>
         
-        <form action="/admin/add_ad" method="POST" class="bg-gray-800 p-4 rounded-2xl shadow-lg mb-6 border border-gray-700">
-            <h2 class="text-sm font-bold mb-3 text-gray-400">📢 إضافة إعلان جديد</h2>
-            <input name="name" placeholder="اسم الإعلان" class="w-full p-3 mb-2 bg-gray-700 rounded-xl text-sm outline-none border border-transparent focus:border-blue-500" required>
-            <input name="url" placeholder="رابط الأفلييت (AliExpress/CPA)" class="w-full p-3 mb-2 bg-gray-700 rounded-xl text-sm outline-none border border-transparent focus:border-blue-500" required>
-            <input name="logo" placeholder="رابط الأيقونة (اختياري)" class="w-full p-3 mb-3 bg-gray-700 rounded-xl text-sm outline-none border border-transparent focus:border-blue-500">
-            <button class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition">زرع إعلان في القائمة</button>
+        <form action="/admin/add_ad" method="POST" class="bg-gray-800 p-4 rounded-2xl mb-4 border border-gray-700">
+            <input name="name" placeholder="اسم الإعلان" class="w-full p-2 mb-2 bg-gray-700 rounded-xl text-sm" required>
+            <input name="url" placeholder="رابط الأفلييت" class="w-full p-2 mb-2 bg-gray-700 rounded-xl text-sm" required>
+            <button class="w-full bg-blue-600 py-2 rounded-xl font-bold">حفظ الإعلان</button>
         </form>
 
-        <form action="/admin/add_source" method="POST" class="bg-gray-800 p-4 rounded-2xl shadow-lg mb-6 border border-gray-700">
-            <h2 class="text-sm font-bold mb-3 text-gray-400">🔗 إضافة مصدر قنوات (M3U)</h2>
-            <input name="url" placeholder="رابط M3U الأصلي" class="w-full p-3 mb-3 bg-gray-700 rounded-xl text-sm outline-none border border-transparent focus:border-green-500" required>
-            <button class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold transition text-white">إضافة مصدر جديد</button>
+        <form action="/admin/add_source" method="POST" class="bg-gray-800 p-4 rounded-2xl mb-4 border border-gray-700">
+            <input name="url" placeholder="رابط M3U (ينتهي بـ type=m3u)" class="w-full p-2 mb-2 bg-gray-700 rounded-xl text-sm" required>
+            <button class="w-full bg-green-600 py-2 rounded-xl font-bold">إضافة مصدر القنوات</button>
         </form>
 
-        <div class="bg-black p-4 rounded-2xl border border-gray-800 shadow-inner">
-            <p class="text-gray-500 text-xs">رابطك الذي ستنشره للمشتركين:</p>
-            <p class="text-blue-500 font-mono text-xs mt-2 break-all p-2 bg-gray-900 rounded border border-gray-800">{{ host_url }}playlist.m3u</p>
-        </div>
-        
-        <div class="mt-6">
-            <h2 class="text-sm font-bold mb-3 text-gray-400">📋 الإعلانات الحالية</h2>
-            {% for ad in ads %}
-            <div class="bg-gray-800 p-3 rounded-xl mb-2 flex justify-between items-center text-xs">
-                <span>{{ ad['name'] }}</span>
-                <span class="text-blue-400">نقرات: {{ ad['clicks'] }}</span>
-            </div>
-            {% endfor %}
+        <div class="bg-black p-3 rounded-xl border border-gray-800 text-center">
+            <p class="text-gray-500 text-xs">الرابط النهائي للنشر:</p>
+            <p class="text-blue-500 text-xs mt-2 font-mono break-all">{{ host_url }}playlist.m3u</p>
         </div>
     </div>
 </body>
@@ -88,19 +73,12 @@ HTML_TEMPLATE = """
 @app.route('/admin')
 def admin():
     if request.args.get('pw') != ADMIN_PASSWORD: return "Forbidden", 403
-    ads = list(ads_col.find()) if ads_col is not None else []
-    sources = list(sources_col.find()) if sources_col is not None else []
-    return render_template_string(HTML_TEMPLATE, ads=ads, sources=sources, host_url=request.host_url)
+    return render_template_string(HTML_TEMPLATE, host_url=request.host_url)
 
 @app.route('/admin/add_ad', methods=['POST'])
 def add_ad():
     if ads_col is not None:
-        ads_col.insert_one({
-            "name": request.form['name'], 
-            "url": request.form['url'], 
-            "logo": request.form['logo'] or "https://cdn-icons-png.flaticon.com/512/743/743224.png", 
-            "clicks": 0
-        })
+        ads_col.insert_one({"name": request.form['name'], "url": request.form['url'], "logo": "https://cdn-icons-png.flaticon.com/512/743/743224.png", "clicks": 0})
     return redirect(f'/admin?pw={ADMIN_PASSWORD}')
 
 @app.route('/admin/add_source', methods=['POST'])
@@ -113,22 +91,19 @@ def add_source():
 def get_playlist():
     def generate():
         yield "#EXTM3U\n"
-        # 1. حقن الإعلانات باستخدام bracket notation لتجنب AttributeError
+        # 1. حقن الإعلانات
         if ads_col is not None:
             for ad in ads_col.find():
-                logo = ad.get('logo', 'https://cdn-icons-png.flaticon.com/512/743/743224.png')
-                name = ad.get('name', 'Ad')
-                yield f'#EXTINF:-1 tvg-logo="{logo}", {name}\n'
+                yield f'#EXTINF:-1 tvg-logo="{ad.get("logo")}", {ad.get("name")}\n'
                 yield f'{request.host_url.rstrip("/")}/go/{ad["_id"]}\n'
         
-        # 2. جلب ودمج المصادر
+        # 2. جلب المصادر
         if sources_col is not None:
             for src in sources_col.find():
-                channels = get_clean_m3u(src['url'])
-                for ch in channels:
-                    yield ch + "\n"
+                yield fetch_m3u_content(src['url']) + "\n"
 
-    return Response(generate(), mimetype='text/plain')
+    # استخدام Mimetype الصحيح الذي تطلبه تطبيقات IPTV
+    return Response(generate(), mimetype='application/x-mpegurl')
 
 @app.route('/go/<id>')
 def go_to_ad(id):
