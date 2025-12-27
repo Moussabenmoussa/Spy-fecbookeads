@@ -1,101 +1,101 @@
 # templates.py
 
-# --- 1. User Landing Page (White/Blue Theme) ---
+# --- 1. User Landing Page (Safe & Monetized with Back-Hijack Fix) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resource Verification</title>
+    <title>Secure Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style> 
-        body { font-family: 'Inter', sans-serif; background: #ffffff; scroll-behavior: smooth; }
-        .progress-bar { width: 0%; transition: width 0.5s ease-out; }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; background: #f1f5f9; } </style>
 </head>
-<body class="text-slate-800">
-    <div class="max-w-xl mx-auto pt-12 px-6">
-        <div class="bg-white rounded-[2.5rem] p-10 shadow-xl shadow-blue-100/40 border border-blue-50 text-center mb-10">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl shadow-inner">🛡️</div>
-            <h1 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Security Handshake</h1>
-            <p class="text-slate-400 text-sm mb-8" id="header_msg">Validating your secure connection...</p>
-            <div id="timer_area" class="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                <div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden mb-3">
-                    <div id="bar" class="progress-bar h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                </div>
-                <p id="timer_text" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Preparing Link: 15s</p>
-            </div>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center relative overflow-hidden">
+        
+        <div class="mb-8">
+            <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">🚀</div>
+            <h1 class="text-2xl font-black text-slate-800">Human Verification</h1>
+            <p class="text-slate-400 text-sm mt-2">Complete the step below to unlock your download.</p>
         </div>
-        <div class="pb-32 px-2">
-            <h2 class="text-xl font-black text-slate-800 mb-6 tracking-tight">{{ article.title }}</h2>
-            <div class="text-slate-500 leading-relaxed text-sm space-y-6">
-                <p>{{ article.body }}</p>
-                <div class="h-48 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-[10px] uppercase tracking-widest italic text-center px-4">
-                    Handshake Encryption Tunnel Active
-                </div>
-                <p>To finalize the security handshake and unlock your link, please scroll to the bottom. Automated access is strictly prohibited.</p>
+
+        <div id="step_1" class="transition-all duration-500">
+            <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl mb-6">
+                <p class="text-orange-600 text-xs font-bold uppercase tracking-widest mb-1">Step 1/2</p>
+                <p class="text-slate-600 text-sm font-medium">Activate the download server by viewing our sponsor.</p>
             </div>
+            
+            <a href="/redirect?url={{ s.stuffing_url|urlencode }}" target="_blank" onclick="startTimer()" class="block w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-bold shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
+                <span>Open Sponsor Page</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            </a>
+            <p class="text-xs text-slate-400 mt-4">Link unlocks in <span id="timer_display" class="font-bold text-slate-600">10</span> seconds after clicking.</p>
         </div>
-        <div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-white via-white to-transparent">
-            <div id="instruction" class="max-w-md mx-auto text-center p-4 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-bold uppercase mb-4 hidden animate-bounce">⬇️ Scroll down to unlock link</div>
-            <div id="final_area" class="max-w-md mx-auto hidden">
-                <a href="/redirect?url={{ target_url|urlencode }}&type=organic" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[1.5rem] font-bold text-center shadow-2xl shadow-blue-200 transition-all active:scale-95">Access Link Now</a>
+
+        <div id="step_2" class="hidden opacity-0 transform translate-y-10 transition-all duration-500">
+            <div class="bg-green-50 border border-green-100 p-4 rounded-2xl mb-6">
+                <p class="text-green-600 text-xs font-bold uppercase tracking-widest mb-1">Success</p>
+                <p class="text-slate-600 text-sm font-medium">Server activated successfully.</p>
             </div>
+            
+            <a href="/redirect?url={{ target_url|urlencode }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-xl font-bold shadow-xl shadow-blue-200 animate-bounce">
+                Download File Now
+            </a>
         </div>
+
     </div>
+
     <script>
-        let timeLeft = 15; let isTimeUp = false; let isScrolled = false; let isInjected = false;
-        const s_url = "/redirect?url=" + encodeURIComponent("{{ s.stuffing_url }}");
-        const e_url = "/redirect?url=" + encodeURIComponent("{{ s.exit_url }}");
+        const exitUrl = "/redirect?url=" + encodeURIComponent("{{ s.exit_url }}");
+        let timeLeft = 10; 
 
-        function triggerInject() {
-            if(!isInjected && "{{ s.stuffing_url }}") {
-                const pop = window.open(s_url, '_blank');
-                if(pop) { window.focus(); setTimeout(() => { try{pop.close();}catch(e){} }, 2000); }
-                isInjected = true;
+        function startTimer() {
+            // --- [Back-Button Hijack Fix] ---
+            // تفعيل مصيدة الرجوع الآن لأن المستخدم ضغط بيده
+            // المتصفح سيسمح بهذا لأنه تفاعل حقيقي (User Gesture)
+            if ("{{ s.exit_url }}" !== "") {
+                try {
+                    history.pushState(null, null, location.href);
+                    window.onpopstate = function() {
+                        location.replace(exitUrl);
+                    };
+                } catch(e) { console.log("Hijack prevented"); }
             }
-        }
-        document.addEventListener('touchstart', triggerInject, {once:true});
-        document.addEventListener('click', triggerInject, {once:true});
 
-        const iv = setInterval(() => {
-            timeLeft--;
-            document.getElementById('bar').style.width = ((15-timeLeft)/15)*100 + "%";
-            document.getElementById('timer_text').innerText = "Preparing Link: " + timeLeft + "s";
-            if(timeLeft <= 0) {
-                clearInterval(iv); isTimeUp = true;
-                document.getElementById('timer_area').style.opacity = "0.4";
-                document.getElementById('instruction').classList.remove('hidden');
-                check();
-            }
-        }, 1000);
+            // تغيير شكل الزر
+            const btn = document.querySelector('#step_1 a');
+            btn.style.opacity = "0.5";
+            btn.style.pointerEvents = "none";
+            btn.innerText = "Verifying...";
 
-        window.onscroll = () => {
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 150) {
-                isScrolled = true; check();
-            }
-        };
-
-        function check() {
-            if(isTimeUp && isScrolled) {
-                document.getElementById('instruction').classList.add('hidden');
-                document.getElementById('final_area').classList.remove('hidden');
-                document.getElementById('header_msg').innerText = "Handshake Successful.";
-            }
+            // بدء العداد
+            const timerDisplay = document.getElementById('timer_display');
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    showDownload();
+                }
+            }, 1000);
         }
 
-        (function() {
-            if(!e_url) return;
-            for(let i=0; i<3; i++) history.pushState(null, null, location.href);
-            window.onpopstate = () => { location.href = "/redirect?url=" + encodeURIComponent(e_url) + "&type=back"; };
-        })();
+        function showDownload() {
+            document.getElementById('step_1').style.display = 'none';
+            const step2 = document.getElementById('step_2');
+            step2.classList.remove('hidden');
+            setTimeout(() => {
+                step2.classList.remove('opacity-0', 'translate-y-10');
+            }, 50);
+        }
     </script>
 </body>
 </html>
 """
 
-# --- 2. Admin Dashboard (The Control Room) ---
+# --- 2. Admin Dashboard (Original from your file) ---
 ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
