@@ -1,4 +1,4 @@
-# app.py
+
 import os, re, json, random
 from flask import Flask, render_template_string, request, redirect, Response
 from pymongo import MongoClient
@@ -8,13 +8,13 @@ import templates
 
 app = Flask(__name__)
 
-# --- Database Connection & Cleaning ---
+# --- Database & Security Configuration ---
 raw_uri = os.getenv("MONGO_URI", "").strip()
 MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri)
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "himsounin1$")
 
 client = MongoClient(MONGO_URI)
-db = client['elite_kraken_system_v7']
+db = client['elite_system_v8']
 links_col = db['links']
 settings_col = db['settings']
 
@@ -26,17 +26,16 @@ def get_settings():
         return default
     return s
 
-# --- Public Gateway Route ---
 @app.route('/v/<slug>')
 def gateway(slug):
     ua = request.headers.get('User-Agent', '').lower()
-    # Cloaking: Show clean content to bots/crawlers
+    # Cloaking for Bots
     if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
         art = random.choice(ARTICLES)
-        return f"<html><body><h1>{art['title']}</h1><p>{art['body']}</p></body></html>"
+        return f"<h1>{art['title']}</h1><p>{art['body']}</p>"
     
     link = links_col.find_one({"slug": slug})
-    if not link: return "Link Expired", 404
+    if not link: return "Invalid Link", 404
     
     links_col.update_one({"slug": slug}, {"$inc": {"clicks": 1}})
     return render_template_string(
@@ -47,22 +46,28 @@ def gateway(slug):
         slug=slug
     )
 
-# --- Referrer Laundry & Google Spoofing ---
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
     if not url: return redirect('/')
-    # The Elite Google Referrer Spoofing Protocol
+    
+    # السر النخبوي: إضافة وسوم البحث العضوي لـ AliExpress (Organic Spoofing)
+    if "aliexpress.com" in url:
+        url += "&utm_source=google&utm_medium=organic&utm_campaign=search"
+    
+    # بروتوكول الغسيل السريع (No White Screen Fix)
     return f'''
-    <html><head><meta name="referrer" content="no-referrer">
-    <script>
-        history.replaceState(null, null, "https://www.google.com/search?q=secure+resource+access+gateway+verification");
-        setTimeout(function(){{ window.location.replace("{url}"); }}, 100);
-    </script></head>
-    <body style="background:#fff;"></body></html>
+    <html>
+    <head>
+        <meta name="referrer" content="no-referrer">
+        <script>window.location.replace("{url}");</script>
+    </head>
+    <body style="background:#fff; display:flex; justify-content:center; align-items:center; height:100vh;">
+        <div style="font-family:sans-serif; color:#3b82f6; font-size:14px; font-weight:bold;">Securing Connection...</div>
+    </body>
+    </html>
     '''
 
-# --- Admin Routes ---
 @app.route('/admin')
 def admin():
     if request.args.get('pw') != ADMIN_PASSWORD: return "Denied", 403
@@ -73,7 +78,6 @@ def admin():
 def create_link():
     title = request.form['title']
     target = request.form['target_url']
-    # Generate unique URL friendly slug
     slug = re.sub(r'[^a-z0-9]', '-', title.lower()).strip('-') + "-" + os.urandom(2).hex()
     links_col.insert_one({"title": title, "target_url": target, "slug": slug, "clicks": 0})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
