@@ -1,4 +1,3 @@
-
 import os, re, json, random
 from flask import Flask, render_template_string, request, redirect, Response
 from pymongo import MongoClient
