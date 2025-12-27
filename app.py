@@ -6,7 +6,6 @@ from bson.objectid import ObjectId
 from content_library import ARTICLES
 import templates
 
-
 app = Flask(__name__)
 
 # --- Database & Security Configuration ---
