@@ -108,13 +108,29 @@ def gateway(slug):
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
+    # نستقبل نوع الترافيك من الرابط
+    traffic_type = request.args.get('type') 
+    
     if not url: return redirect('/')
     
-    if "aliexpress.com" in url:
-        if "?" in url: url += "&utm_source=google&utm_medium=organic"
-        else: url += "?utm_source=google&utm_medium=organic"
+    # الشرط الذكي:
+    # نطبق التمويه إذا كان الرابط من علي إكسبريس، أو إذا طلبنا ذلك صراحة (للرابط النهائي)
+    if "aliexpress.com" in url or traffic_type == "organic":
+        # نتأكد أولاً أن الرابط لا يحتوي أصلاً على UTM لتجنب التكرار
+        if "utm_source" not in url:
+            separator = "&" if "?" in url else "?"
+            url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign=search_result"
     
-    return f'''<html><head><meta name="referrer" content="no-referrer"><script>window.location.replace("{url}");</script></head><body style="background:#fff;"></body></html>'''
+    # صفحة الغسيل (Referrer Killing)
+    return f'''
+    <html>
+    <head>
+        <meta name="referrer" content="no-referrer">
+        <script>window.location.replace("{url}");</script>
+    </head>
+    <body style="background:#fff;"></body>
+    </html>
+    '''
 
 @app.route('/admin')
 def admin():
