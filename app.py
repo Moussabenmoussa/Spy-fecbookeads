@@ -1,163 +1,123 @@
-import os, requests, time, re
-from flask import Flask, render_template_string, request, redirect, jsonify
+
+import os, requests, re, json
+from flask import Flask, render_template_string, request, redirect, jsonify, Response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
-# --- الإعدادات وقاعدة البيانات ---
-MONGO_URI = os.getenv("MONGO_URI", "").strip()
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123") # كلمة السر للوحة التحكم
-client = MongoClient(MONGO_URI)
-db = client['iptv_manager']
-sources_col = db['sources']
-ads_col = db['ads']
-stats_col = db['stats']
+# --- تنظيف وإعداد قاعدة البيانات ---
+raw_uri = os.getenv("MONGO_URI", "").strip()
+MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri)
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123").strip()
 
-# --- وظائف مساعدة ---
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    db = client.get_database()
+    sources_col = db['sources']
+    ads_col = db['ads']
+    client.admin.command('ping')
+    print("✅ Connected to MongoDB")
+except Exception as e:
+    print(f"❌ MongoDB Error: {e}")
+    sources_col = ads_col = None
+
 def get_clean_m3u(url):
     try:
-        r = requests.get(url, timeout=10)
+        # استخدام User-Agent لإيهام السيرفر الأصلي أننا متصفح
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        r = requests.get(url, headers=headers, timeout=15, stream=True)
         if r.status_code == 200:
-            lines = r.text.splitlines()
-            if lines and "#EXTM3U" in lines[0]:
-                return lines[1:] # نرجع القنوات بدون رأس الملف
-    except: pass
+            lines = []
+            for line in r.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8', errors='ignore')
+                    if "#EXTM3U" not in decoded_line: # نتجاهل رأس الملف لتجنب التكرار
+                        lines.append(decoded_line)
+            return lines
+    except Exception as e:
+        print(f"⚠️ Error fetching {url}: {e}")
     return []
 
-# --- لوحة التحكم (Dashboard UI) ---
+# --- لوحة التحكم (نفس التصميم السابق مع تحسينات) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Master Control</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white font-sans">
-    <div class="max-w-md mx-auto p-4">
-        <header class="flex justify-between items-center mb-8 bg-gray-800 p-4 rounded-2xl shadow-lg border-b-2 border-blue-500">
-            <h1 class="text-xl font-bold">💎 رادار النخبة</h1>
-            <span class="bg-green-500 text-xs px-2 py-1 rounded-full text-black font-bold">Online</span>
-        </header>
+<body class="bg-gray-900 text-white p-4">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6 border-b pb-2">💎 لوحة تحكم النخبة</h1>
+        
+        <form action="/admin/add_ad" method="POST" class="bg-gray-800 p-4 rounded-xl mb-6">
+            <input name="name" placeholder="اسم الإعلان" class="w-full p-2 mb-2 bg-gray-700 rounded text-sm" required>
+            <input name="url" placeholder="رابط الأفلييت" class="w-full p-2 mb-2 bg-gray-700 rounded text-sm" required>
+            <input name="logo" placeholder="رابط الأيقونة (اختياري)" class="w-full p-2 mb-2 bg-gray-700 rounded text-sm">
+            <button class="w-full bg-blue-600 p-2 rounded font-bold">زرع إعلان</button>
+        </form>
 
-        <!-- إدارة الإعلانات -->
-        <section class="mb-8">
-            <h2 class="text-blue-400 font-bold mb-4 flex items-center">📢 إدارة الإعلانات المحقونة</h2>
-            <form action="/admin/add_ad" method="POST" class="bg-gray-800 p-4 rounded-2xl space-y-3">
-                <input name="name" placeholder="اسم قناة الإعلان (مثلا: هديتك هنا)" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:border-blue-500 text-sm">
-                <input name="url" placeholder="رابط الإعلان (AliExpress / CPA)" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:border-blue-500 text-sm">
-                <input name="logo" placeholder="رابط أيقونة القناة (Image URL)" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:border-blue-500 text-sm">
-                <button class="w-full bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-700 transition">زرع إعلان جديد</button>
-            </form>
-            
-            <div class="mt-4 space-y-2">
-                {% for ad in ads %}
-                <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border-r-4 border-blue-500">
-                    <div class="text-sm font-bold">{{ ad.name }} <span class="text-xs text-gray-500 block">نقر: {{ ad.clicks }}</span></div>
-                    <a href="/admin/delete_ad/{{ ad._id }}" class="text-red-500 text-xs">حذف</a>
-                </div>
-                {% endfor %}
-            </div>
-        </section>
+        <form action="/admin/add_source" method="POST" class="bg-gray-800 p-4 rounded-xl mb-6">
+            <input name="url" placeholder="رابط M3U الأصلي" class="w-full p-2 mb-2 bg-gray-700 rounded text-sm" required>
+            <button class="w-full bg-green-600 p-2 rounded font-bold">إضافة مصدر قنوات</button>
+        </form>
 
-        <!-- إدارة المصادر M3U -->
-        <section class="mb-8">
-            <h2 class="text-green-400 font-bold mb-4 flex items-center">🔗 مصادر M3U المتصلة</h2>
-            <form action="/admin/add_source" method="POST" class="bg-gray-800 p-4 rounded-2xl space-y-3">
-                <input name="url" placeholder="رابط m3u الأصلي" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:border-green-500 text-sm">
-                <button class="w-full bg-green-600 py-3 rounded-xl font-bold hover:bg-green-700 transition">إضافة مصدر جديد</button>
-            </form>
-
-            <div class="mt-4 space-y-2">
-                {% for src in sources %}
-                <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border-r-4 border-green-500">
-                    <div class="text-xs truncate w-48">{{ src.url }}</div>
-                    <a href="/admin/delete_source/{{ src._id }}" class="text-red-500 text-xs">إزالة</a>
-                </div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <footer class="text-center text-gray-600 text-xs mt-10">
-            <p>رابطك للمشتركين:</p>
-            <code class="block bg-black p-2 rounded mt-2 text-blue-400">{{ base_url }}/playlist.m3u</code>
-        </footer>
+        <div class="text-xs bg-black p-3 rounded border border-gray-700">
+            <p class="text-gray-400">رابطك للمشتركين:</p>
+            <p class="text-blue-400 font-mono mt-1 break-all">{{ host_url }}playlist.m3u</p>
+        </div>
     </div>
 </body>
 </html>
 """
 
-# --- المسارات (Routes) ---
-
 @app.route('/admin')
 def admin():
-    # حماية بسيطة بكلمة سر عبر الـ URL لسهولة الهاتف
-    pw = request.args.get('pw')
-    if pw != ADMIN_PASSWORD:
-        return "غير مصرح لك", 403
-    
-    ads = list(ads_col.find())
-    sources = list(sources_col.find())
-    base_url = request.host_url.rstrip('/')
-    return render_template_string(HTML_TEMPLATE, ads=ads, sources=sources, base_url=base_url)
+    if request.args.get('pw') != ADMIN_PASSWORD: return "Forbidden", 403
+    ads = list(ads_col.find()) if ads_col else []
+    sources = list(sources_col.find()) if sources_col else []
+    return render_template_string(HTML_TEMPLATE, ads=ads, sources=sources, host_url=request.host_url)
 
 @app.route('/admin/add_ad', methods=['POST'])
 def add_ad():
-    ads_col.insert_one({
-        "name": request.form['name'],
-        "url": request.form['url'],
-        "logo": request.form['logo'],
-        "clicks": 0
-    })
+    if ads_col is not None:
+        ads_col.insert_one({"name": request.form['name'], "url": request.form['url'], "logo": request.form['logo'] or "https://bit.ly/3vL9Y7m", "clicks": 0})
     return redirect(f'/admin?pw={ADMIN_PASSWORD}')
 
 @app.route('/admin/add_source', methods=['POST'])
 def add_source():
-    sources_col.insert_one({"url": request.form['url']})
+    if sources_col is not None:
+        sources_col.insert_one({"url": request.form['url'].strip()})
     return redirect(f'/admin?pw={ADMIN_PASSWORD}')
 
-@app.route('/admin/delete_ad/<id>')
-def delete_ad(id):
-    ads_col.delete_one({"_id": ObjectId(id)})
-    return redirect(f'/admin?pw={ADMIN_PASSWORD}')
-
-@app.route('/admin/delete_source/<id>')
-def delete_source(id):
-    sources_col.delete_one({"_id": ObjectId(id)})
-    return redirect(f'/admin?pw={ADMIN_PASSWORD}')
-
-# --- محرك الحقن (The Injector Engine) ---
 @app.route('/playlist.m3u')
 def get_playlist():
-    output = ["#EXTM3U"]
-    
-    # 1. حقن الإعلانات
-    ads = list(ads_col.find())
-    for ad in ads:
-        output.append(f'#EXTINF:-1 tvg-logo="{ad.logo}", {ad.name}')
-        output.append(f'{request.host_url.rstrip("/")}/go/{ad._id}')
-    
-    # 2. جلب ودمج القنوات من المصادر
-    sources = list(sources_col.find())
-    for src in sources:
-        channels = get_clean_m3u(src.url)
-        output.extend(channels)
-    
-    return "\n".join(output), {"Content-Type": "text/plain; charset=utf-8"}
+    def generate():
+        yield "#EXTM3U\n"
+        # 1. حقن الإعلانات
+        if ads_col is not None:
+            for ad in ads_col.find():
+                yield f'#EXTINF:-1 tvg-logo="{ad["logo"]}", {ad["name"]}\n'
+                yield f'{request.host_url.rstrip("/")}/go/{ad["_id"]}\n'
+        
+        # 2. جلب ودمج المصادر
+        if sources_col is not None:
+            for src in sources_col.find():
+                channels = get_clean_m3u(src['url'])
+                for ch in channels:
+                    yield ch + "\n"
 
-# --- محول النقرات (Click Handler) ---
+    return Response(generate(), mimetype='text/plain')
+
 @app.route('/go/<id>')
 def go_to_ad(id):
-    ad = ads_col.find_one_and_update(
-        {"_id": ObjectId(id)},
-        {"$inc": {"clicks": 1}}
-    )
-    if ad:
-        # هنا يمكنك إضافة "صفحة غسيل المرجع" إذا أردت
-        return redirect(ad['url'])
-    return "Ad not found", 404
+    if ads_col is not None:
+        ad = ads_col.find_one_and_update({"_id": ObjectId(id)}, {"$inc": {"clicks": 1}})
+        if ad: return redirect(ad['url'])
+    return "Not Found", 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
