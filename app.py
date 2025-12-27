@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 app = Flask(__name__)
 
-# --- تنظيف رابط قاعدة البيانات ---
+# --- 1. تنظيف وإعداد رابط قاعدة البيانات ---
 raw_uri = os.getenv("MONGO_URI", "")
 MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri).strip()
 
@@ -17,106 +17,119 @@ try:
         db = client.get_database()
         ads_collection = db['ads']
         client.admin.command('ping')
+        print("✅ MongoDB Connected Successfully")
     else:
+        print("⚠️ No MONGO_URI found, ads will not be saved.")
         ads_collection = None
-except:
+except Exception as e:
+    print(f"❌ DB Connection Error: {e}")
     ads_collection = None
 
+# --- 2. دالة السحب (Scraper) ---
 def run_scraper(raw_cookies_text, keyword):
     results = []
     with sync_playwright() as p:
-        # إعداد المتصفح
+        # تشغيل المتصفح مع إعدادات تخطي الحظر
         browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-        context = browser.new_context()
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        )
         
         try:
+            # تنظيف ومعالجة الكوكيز القادمة من الهاتف
             raw_cookies_text = raw_cookies_text.strip()
             if "[" in raw_cookies_text:
                 cookies = json.loads(raw_cookies_text)
-                
-                # --- معالجة الكوكيز لتتوافق مع Playwright ---
                 valid_samesite = ["Strict", "Lax", "None"]
                 for cookie in cookies:
-                    # 1. إصلاح SameSite
-                    if "sameSite" in cookie:
-                        if cookie["sameSite"] not in valid_samesite:
-                            # حذف القيمة غير الصحيحة (مثل unspecified) ليستخدم المتصفح الافتراضي
-                            del cookie["sameSite"]
-                    
-                    # 2. تحويل تاريخ الانتهاء إلى رقم صحيح
+                    # إصلاح مشكلة SameSite
+                    if "sameSite" in cookie and cookie["sameSite"] not in valid_samesite:
+                        del cookie["sameSite"]
+                    # إصلاح مشكلة تاريخ الانتهاء
                     if "expirationDate" in cookie:
-                        cookie["expirationDate"] = int(float(cookie["expirationDate"]))
-                    
-                    # 3. حذف خصائص غير ضرورية قد تسبب مشاكل
-                    cookie.pop("hostOnly", None)
-                    cookie.pop("session", None)
-                    cookie.pop("storeId", None)
-                    cookie.pop("id", None)
-
+                        try:
+                            cookie["expirationDate"] = int(float(cookie["expirationDate"]))
+                        except: del cookie["expirationDate"]
+                    # حذف الخصائص غير المتوافقة مع Playwright
+                    for key in ["hostOnly", "session", "storeId", "id"]:
+                        cookie.pop(key, None)
                 context.add_cookies(cookies)
-            else:
-                # معالجة إذا قام المستخدم بلصق نص عادي
-                ck_list = []
-                for item in raw_cookies_text.split(';'):
-                    if '=' in item:
-                        name, value = item.strip().split('=', 1)
-                        ck_list.append({'name': name, 'value': value, 'domain': '.tiktok.com', 'path': '/'})
-                context.add_cookies(ck_list)
-
-        except Exception as e:
-            browser.close()
-            return {"error": f"خطأ في الكوكيز: {str(e)}"}
-
-        page = context.new_page()
-        # الدخول لصفحة البحث
-        search_url = f"https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en?keyword={keyword}"
-        
-        try:
-            page.goto(search_url, wait_until="networkidle", timeout=60000)
-            # التمرير لأسفل لرؤية الإعلانات
-            page.mouse.wheel(0, 3000)
-            page.wait_for_timeout(5000)
-
-            # سحب العناصر (الـ Selector الخاص بتيك توك قد يتغير، نستخدم محددات مرنة)
-            cards = page.locator("[class*='item-card']").all()
             
-            for card in cards[:10]:
+            page = context.new_page()
+            # الرابط المباشر للبحث في تيك توك
+            search_url = f"https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en?keyword={keyword}"
+            print(f"🚀 Searching for: {keyword}")
+            
+            page.goto(search_url, wait_until="networkidle", timeout=60000)
+            
+            # الانتظار حتى تظهر عناصر الإعلانات
+            try:
+                page.wait_for_selector("[class*='Card']", timeout=15000)
+            except: pass
+
+            # سكرول لأسفل لتحميل المزيد
+            page.mouse.wheel(0, 2000)
+            page.wait_for_timeout(3000)
+
+            # استخراج البطاقات باستخدام محددات مرنة
+            cards = page.locator("[class*='ItemCard'], [class*='CardContainer'], [class*='card-V2']").all()
+            print(f"📦 Found {len(cards)} elements")
+
+            for card in cards[:12]:
                 try:
-                    title = card.locator("[class*='title']").first.inner_text() if card.locator("[class*='title']").count() > 0 else "Ad"
-                    ad_id = card.get_attribute("id") or "N/A"
+                    # محاولة استخراج العنوان أو نص الإعلان
+                    title_el = card.locator("[class*='title'], [class*='desc'], h3").first
+                    title = title_el.inner_text() if title_el.count() > 0 else "TikTok Ad"
                     
-                    ad_data = {"ad_id": ad_id, "title": title, "keyword": keyword}
+                    # محاولة استخراج ID فريد
+                    ad_id = card.get_attribute("id") or str(abs(hash(title)))
                     
+                    ad_data = {
+                        "ad_id": ad_id,
+                        "title": title[:100], # تقصير النص
+                        "keyword": keyword
+                    }
+                    
+                    # حفظ في MongoDB
                     if ads_collection is not None:
                         ads_collection.update_one({"ad_id": ad_id}, {"$set": ad_data}, upsert=True)
+                    
                     results.append(ad_data)
                 except: continue
+
         except Exception as e:
-            return {"error": f"خطأ أثناء التصفح: {str(e)}"}
+            print(f"❌ Scraper Error: {e}")
+            return {"error": str(e)}
         finally:
             browser.close()
             
     return results
 
+# --- 3. المسارات (Routes) ---
 @app.route('/')
 def index():
-    ads = []
+    saved_ads = []
     if ads_collection is not None:
-        ads = list(ads_collection.find().sort("_id", -1).limit(20))
-    return render_template('index.html', ads=ads)
+        try:
+            saved_ads = list(ads_collection.find().sort("_id", -1).limit(24))
+        except: pass
+    return render_template('index.html', ads=saved_ads)
 
 @app.route('/scrape', methods=['POST'])
 def scrape():
     data = request.json
     cookies = data.get('cookies')
-    keyword = data.get('keyword', 'trending')
-    if not cookies:
-        return jsonify({"status": "error", "message": "أين الكوكيز؟"})
+    keyword = data.get('keyword', 'Kitchen')
     
-    res = run_scraper(cookies, keyword)
-    if isinstance(res, dict) and "error" in res:
-        return jsonify({"status": "error", "message": res["error"]})
-    return jsonify({"status": "success", "count": len(res), "ads": res})
+    if not cookies:
+        return jsonify({"status": "error", "message": "يرجى لصق الكوكيز أولاً"})
+    
+    new_ads = run_scraper(cookies, keyword)
+    
+    if isinstance(new_ads, dict) and "error" in new_ads:
+        return jsonify({"status": "error", "message": new_ads["error"]})
+    
+    return jsonify({"status": "success", "count": len(new_ads), "ads": new_ads})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
