@@ -1,4 +1,5 @@
-import os, re, json, random
+
+import os, re, json, random, requests
 from flask import Flask, render_template_string, request, redirect, Response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -25,23 +26,73 @@ def get_settings():
         return default
     return s
 
+# --- دالة ويكيبيديا الذكية (Wikipedia Fetcher) ---
+def get_wiki_content(slug):
+    try:
+        # 1. تنظيف الـ Slug: حذف المعرف العشوائي في النهاية واستبدال الشخطات بمسافات
+        # مثال: "netflix-premium-free-1a2b" -> "netflix premium free"
+        clean_keyword = slug.rsplit('-', 1)[0].replace('-', ' ')
+        
+        # 2. البحث في ويكيبيديا باستخدام API البحث (للعثور على أفضل تطابق)
+        search_url = "https://en.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": clean_keyword,
+            "format": "json",
+            "utf8": 1,
+            "srlimit": 1
+        }
+        
+        # نستخدم requests مع timeout قصير (3 ثواني) لكي لا نعطل الصفحة
+        search_res = requests.get(search_url, params=params, timeout=3).json()
+        
+        # 3. إذا وجدنا نتيجة، نجلب الملخص
+        if search_res.get('query', {}).get('search'):
+            best_match_title = search_res['query']['search'][0]['title']
+            
+            summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{best_match_title}"
+            summary_res = requests.get(summary_url, timeout=3).json()
+            
+            if 'extract' in summary_res:
+                return {
+                    "title": summary_res['title'],
+                    "body": summary_res['extract']
+                }
+                
+    except Exception as e:
+        # في حالة أي خطأ (أو بطء في الاتصال)، نتجاهل ويكيبيديا ونعود للمكتبة المحلية
+        print(f"Wiki Error: {e}")
+        
+    return None
+
+# --- Routes ---
+
 @app.route('/v/<slug>')
 def gateway(slug):
     ua = request.headers.get('User-Agent', '').lower()
-    # Cloaking for Bots
-    if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
-        art = random.choice(ARTICLES)
-        return f"<h1>{art['title']}</h1><p>{art['body']}</p>"
     
+    # 1. محاولة جلب محتوى حقيقي من ويكيبيديا
+    wiki_art = get_wiki_content(slug)
+    
+    # 2. اختيار المقال النهائي: إما ويكيبيديا (إذا نجح) أو مقال عشوائي من المكتبة (إذا فشل)
+    final_article = wiki_art if wiki_art else random.choice(ARTICLES)
+
+    # 3. نظام التخفي (Cloaking): البوتات ترى المقال فقط
+    if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
+        return f"<h1>{final_article['title']}</h1><p>{final_article['body']}</p>"
+    
+    # 4. الزوار الحقيقيون: يمرون إلى صفحة الهبوط
     link = links_col.find_one({"slug": slug})
     if not link: return "Invalid Link", 404
     
     links_col.update_one({"slug": slug}, {"$inc": {"clicks": 1}})
+    
     return render_template_string(
         templates.LANDING_HTML, 
         target_url=link['target_url'], 
         s=get_settings(), 
-        article=random.choice(ARTICLES),
+        article=final_article,  # تمرير المقال الديناميكي للقالب
         slug=slug
     )
 
@@ -50,11 +101,14 @@ def laundry():
     url = request.args.get('url')
     if not url: return redirect('/')
     
-    # السر النخبوي: إضافة وسوم البحث العضوي لـ AliExpress (Organic Spoofing)
+    # السر النخبوي: إضافة وسوم البحث العضوي لـ AliExpress
     if "aliexpress.com" in url:
-        url += "&utm_source=google&utm_medium=organic&utm_campaign=search"
+        if "?" in url:
+            url += "&utm_source=google&utm_medium=organic&utm_campaign=search"
+        else:
+            url += "?utm_source=google&utm_medium=organic&utm_campaign=search"
     
-    # بروتوكول الغسيل السريع (No White Screen Fix)
+    # بروتوكول الغسيل السريع
     return f'''
     <html>
     <head>
@@ -77,6 +131,7 @@ def admin():
 def create_link():
     title = request.form['title']
     target = request.form['target_url']
+    # إنشاء Slug نظيف مع معرف عشوائي قصير
     slug = re.sub(r'[^a-z0-9]', '-', title.lower()).strip('-') + "-" + os.urandom(2).hex()
     links_col.insert_one({"title": title, "target_url": target, "slug": slug, "clicks": 0})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
