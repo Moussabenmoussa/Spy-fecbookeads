@@ -49,7 +49,9 @@ HOME_HTML = """
         
             <a href="/" class="flex items-center gap-3 group">
                 <img src="https://b.top4top.io/p_3649zxju10.png" alt="TRAFICOON" class="h-9 w-auto object-contain transition group-hover:scale-105">
-                <span class="font-black text-xl tracking-tighter text-slate-900 hidden md:block">TRAFICOON<span class="text-blue-600">.</span></span>
+                
+                <span class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
+                
             </a>
             <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
                 <a href="/" class="hover:text-blue-600 transition">Latest</a>
