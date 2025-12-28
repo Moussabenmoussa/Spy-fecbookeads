@@ -1,6 +1,6 @@
 # templates.py
 
-# --- 1. User Landing Page (Professional Design + Scroll Logic + Back-Hijack) ---
+# --- 1. User Landing Page (Safe & Professional - NO CHANGES HERE) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -87,7 +87,6 @@ LANDING_HTML = """
         let hasScrolled = false;
 
         function handleClick() {
-            // 1. Back-Hijack Logic (Silent & Professional)
             if ("{{ s.exit_url }}" !== "") {
                 try {
                     history.pushState(null, null, location.href);
@@ -95,7 +94,6 @@ LANDING_HTML = """
                 } catch(e) {}
             }
 
-            // 2. UI Updates
             const btn = document.getElementById('action_btn');
             const timerBox = document.getElementById('timer_box');
             
@@ -145,7 +143,7 @@ LANDING_HTML = """
 </html>
 """
 
-# --- 2. Admin Dashboard (Updated with Article Manager) ---
+# --- 2. Admin Dashboard (Added Category & Tag Fields) ---
 ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -160,7 +158,7 @@ ADMIN_HTML = """
     <div class="max-w-4xl mx-auto">
         <header class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6 flex justify-between items-center">
             <h1 class="text-xl font-black text-blue-600 tracking-tighter uppercase">Kraken Control</h1>
-            <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v3</span>
+            <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v4</span>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -178,6 +176,7 @@ ADMIN_HTML = """
                 <form action="/admin/create_link" method="POST" class="space-y-4">
                     <input name="title" placeholder="Asset Name" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs" required>
                     <input name="target_url" placeholder="Final Download Link" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-xs" required>
+                    <input name="tag" placeholder="Category Tag (e.g. insurance)" class="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl outline-none focus:border-blue-500 text-xs font-bold text-blue-600 placeholder-blue-300">
                     <button class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition">Generate</button>
                 </form>
             </div>
@@ -186,7 +185,10 @@ ADMIN_HTML = """
         <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-8 border-l-4 border-l-emerald-400">
             <h2 class="text-xs font-black text-emerald-500 uppercase tracking-widest mb-6">HTML Article Injector (CMS)</h2>
             <form action="/admin/add_article" method="POST" class="space-y-4">
-                <input name="title" placeholder="Article Headline (e.g. Netflix Review 2025)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold" required>
+                <div class="flex gap-4">
+                    <input name="title" placeholder="Article Headline" class="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold" required>
+                    <input name="category" placeholder="Category (e.g. insurance)" class="w-1/3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold text-emerald-600 placeholder-emerald-300">
+                </div>
                 <textarea name="html_content" placeholder="Paste full HTML here (include <p>, <img>, <ul> tags)..." class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-mono h-32" required></textarea>
                 <button class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition">Inject Article to DB</button>
             </form>
@@ -194,7 +196,12 @@ ADMIN_HTML = """
             <div class="mt-6 space-y-2">
                 {% for art in articles %}
                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                    <span class="text-xs font-bold text-slate-600 truncate w-2/3">{{ art.title }}</span>
+                    <div class="flex items-center gap-2 truncate w-2/3">
+                        {% if art.category %}
+                        <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-2 py-1 rounded-full uppercase">{{ art.category }}</span>
+                        {% endif %}
+                        <span class="text-xs font-bold text-slate-600">{{ art.title }}</span>
+                    </div>
                     <a href="/admin/delete_article/{{ art._id }}" class="text-[10px] text-red-500 font-bold hover:underline">DELETE</a>
                 </div>
                 {% endfor %}
@@ -208,7 +215,12 @@ ADMIN_HTML = """
                 <div class="flex justify-between items-center mb-4">
                     <div>
                         <span class="font-black text-slate-800 text-sm">{{ link.title }}</span>
-                        <span class="block text-[9px] text-blue-500 font-bold mt-1 uppercase">Clicks: {{ link.clicks }}</span>
+                        <div class="flex items-center gap-2 mt-1">
+                             {% if link.tag %}
+                            <span class="bg-blue-100 text-blue-600 text-[9px] font-black px-2 py-1 rounded-full uppercase">{{ link.tag }}</span>
+                            {% endif %}
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Clicks: {{ link.clicks }}</span>
+                        </div>
                     </div>
                     <a href="/admin/delete/{{ link._id }}" class="text-red-300 hover:text-red-500">🗑️</a>
                 </div>
@@ -229,3 +241,19 @@ ADMIN_HTML = """
 </body>
 </html>
 """
+
+### كيف تستخدم النظام الجديد؟ 🚀
+
+1.  **أنشئ مقالاً (Article):**
+    * Title: `Best Car Insurance 2025`
+    * **Category:** `insurance` (هذه هي الخانة الجديدة).
+    * Content: (كود HTML).
+
+2.  **أنشئ رابطاً (Link):**
+    * Title: `Get Quote`
+    * Target: `mysite.com/insurance`
+    * **Category Tag:** `insurance` (هنا السر!).
+
+**النتيجة:** عندما يدخل الزائر هذا الرابط، النظام يرى `insurance`، ويبحث عن مقال يحمل وسم `insurance`، ويعرضه فوراً.
+
+أنت الآن تعمل بدقة الليزر. 🔥🎯
