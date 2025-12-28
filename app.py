@@ -293,15 +293,118 @@ def public_shorten():
     """)
     resp.set_cookie('traficoon_limit', today, max_age=86400)
     return resp
+   ... 
+
+
+
+  . 
 
 # --- الغسالة ---
+
+
+from flask import Flask, request, make_response
+from urllib.parse import urlparse
+import html, random, re, json
+from datetime import datetime
+
+app = Flask(__name__)
+
+HIGH_CPC_HASHES = [
+    "insurance-claim-quote-auto",
+    "mesothelioma-lawyer-attorney-california",
+    "structured-settlement-annuity-companies",
+    "business-voip-phone-services-cloud",
+    "online-degree-education-mba-programs",
+    "donate-car-to-charity-california"
+]
+
+HASH_MAP = {
+    r"insurance|claim|auto": "insurance-claim-quote-auto",
+    r"lawyer|attorney|legal": "mesothelioma-lawyer-attorney-california",
+    r"settlement|annuity": "structured-settlement-annuity-companies",
+    r"voip|cloud|phone": "business-voip-phone-services-cloud",
+    r"mba|degree|education": "online-degree-education-mba-programs",
+    r"donate|car|charity": "donate-car-to-charity-california"
+}
+
+def is_safe_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        return parsed.scheme in ["http", "https"] and bool(parsed.netloc)
+    except:
+        return False
+
+def match_contextual_hash(url: str) -> str:
+    # البحث عن هاش مناسب لمحتوى الرابط
+    for pattern, hash_val in HASH_MAP.items():
+        if re.search(pattern, url, re.IGNORECASE):
+            return hash_val
+    # إذا لم نجد، نختار عشوائياً
+    return random.choice(HIGH_CPC_HASHES)
+
 @app.route('/redirect')
 def laundry():
-    url = request.args.get('url'); t = request.args.get('type')
-    if not url: return redirect('/')
-    if "aliexpress" in url or t == "organic":
-        if "utm_source" not in url: url += ("&" if "?" in url else "?") + "utm_source=google&utm_medium=organic"
-    return f'<script>window.location.replace("{url}");</script>'
+    url = request.args.get('url')
+
+    if not url or not is_safe_url(url):
+        return "Invalid Request", 400
+
+    # 1. ✅ استراتيجية UTM الذكية (Time-Based)
+    if "utm_source" not in url:
+        hour = datetime.utcnow().hour
+        campaign_time = "morning" if 6 <= hour < 12 else "evening" if 18 <= hour < 24 else "daytime"
+        
+        separator = "&" if "?" in url else "?"
+        url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign={campaign_time}"
+
+    # 2. ✅ حقن الهاش السياقي (Contextual Hash)
+    if "#" not in url:
+        fake_context = match_contextual_hash(url)
+        url += f"#{fake_context}"
+
+    # تجهيز الرابط للـ HTML (لمنع XSS) وللـ JS (بدون تخريب الرموز)
+    safe_url_html = html.escape(url, quote=True)
+    
+    # 3. ✅ رسائل تحميل عشوائية (لإعطاء طابع بشري خفيف)
+    messages = ["Loading...", "Redirecting...", "Please wait...", "Connecting..."]
+    message = random.choice(messages)
+
+    # 4. ✅ الصفحة النهائية (Clean & Fast)
+    # - Meta Refresh: 0 (فوري)
+    # - Referrer: no-referrer (مخفي)
+    # - JS Backup: يعمل فوراً
+    html_page = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="referrer" content="no-referrer">
+        <meta http-equiv="refresh" content="0;url={safe_url_html}">
+        <title>{message}</title>
+        <style>body{{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f8fafc;color:#64748b;font-size:14px;}}</style>
+        <script>
+            // التحويل الفوري عبر الجافاسكريبت كاحتياط
+            window.location.replace("{url}"); 
+        </script>
+    </head>
+    <body>
+        <p>{message}</p>
+        <noscript>
+            <a href="{safe_url_html}" rel="noreferrer">Click here to continue</a>
+        </noscript>
+    </body>
+    </html>
+    """
+
+    return make_response(html_page)
+
+
+
+
+
+
+
 
 # --- لوحة التحكم ---
 @app.route('/admin')
