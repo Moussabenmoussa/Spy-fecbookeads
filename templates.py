@@ -14,7 +14,7 @@ LANDING_HTML = """
 
 <link rel="icon" type="image/png" href="https://b.top4top.io/p_3649zxju10.png">
 
-    
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content="{{ article.meta_desc }}">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     
