@@ -55,7 +55,8 @@ HOME_HTML = """
             <article class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden transition duration-300 card-hover flex flex-col h-full">
                 <a href="/read/{{ art._id }}" class="block h-52 overflow-hidden relative group">
                     {% if art.image %}
-                    <img src="{{ art.image }}" alt="{{ art.title }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" loading="lazy">
+                    
+                    <img src="https://images.weserv.nl/?url={{ art.image }}&w=650&q=80&output=webp" alt="{{ art.title }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" loading="lazy">
                     {% else %}
                     <div class="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300">
                         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
