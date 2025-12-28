@@ -175,18 +175,63 @@ def sitemap():
 @app.route('/public/shorten', methods=['POST'])
 def public_shorten():
     target = request.form.get('target_url')
-    cat = request.form.get('category', 'general')
-    ip = get_client_ip(); today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+    # تنظيف اسم القسم وجعله حروفاً صغيرة
+    cat = request.form.get('category', 'general').strip().lower()
     
+    ip = get_client_ip()
+    today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+    
+    # 1. نظام الحماية (Rate Limit)
     if request.cookies.get('traficoon_limit') == today or public_logs.find_one({"ip": ip, "date": today}):
-        return "<h3>Limit Exceeded</h3>", 429
+        return "<h3>Limit Exceeded: One link per day allowed.</h3>", 429
 
-    slug = re.sub(r'[^a-z0-9]', '', cat.lower()) + "-" + os.urandom(3).hex()
-    links_col.insert_one({"title": f"Public - {cat}", "target_url": target, "slug": slug, "clicks": 0, "tag": cat, "is_public": True, "created_at": datetime.datetime.utcnow()})
+    # 2. 🔥 الحل النخبوي: البحث في قاعدة البيانات عن عناوين حقيقية لهذا القسم
+    # نجلب فقط حقل "title" لتقليل الحمل على السيرفر
+    # نبحث عن مقالات في نفس القسم الذي اختاره المستخدم
+    db_articles = list(articles_col.find({"category": cat}, {"title": 1}).limit(50))
+    
+    if db_articles:
+        # ✅ وجدنا مقالات! نختار عنواناً عشوائياً منها ليكون هو الرابط
+        chosen_title = random.choice(db_articles)['title']
+        # تحويل العنوان إلى صيغة رابط (Slug)
+        slug_base = re.sub(r'[^a-z0-9]+', '-', chosen_title.lower()).strip('-')
+    else:
+        # ⚠️ حالة احتياطية: إذا أنشأت قسماً جديداً ولم تضع فيه مقالات بعد
+        # نقوم بتوليد عنوان ذكي وتلقائي
+        slug_base = f"top-{cat}-trends-review"
+
+    # إضافة كود عشوائي قصير جداً في النهاية لضمان عدم التكرار
+    slug = f"{slug_base}-{os.urandom(2).hex()}"
+
+    # الحفظ في قاعدة البيانات
+    links_col.insert_one({
+        "title": f"Public - {slug_base.replace('-', ' ').title()}", 
+        "target_url": target, 
+        "slug": slug, 
+        "clicks": 0, 
+        "tag": cat, 
+        "is_public": True, 
+        "created_at": datetime.datetime.utcnow()
+    })
+    
+    # تسجيل اللوج للحماية
     public_logs.insert_one({"ip": ip, "date": today})
     
-    final = f"{request.host_url}{cat}/{slug}"
-    resp = make_response(f"<div style='text-align:center;padding:50px;'><h1>Done!</h1><input value='{final}' readonly></div>")
+    final_link = f"{request.host_url}{cat}/{slug}"
+    
+    # عرض النتيجة
+    resp = make_response(f"""
+        <div style='font-family:sans-serif; text-align:center; padding:50px; background:#f8fafc;'>
+            <h1 style='color:#16a34a;'>✅ Secure Link Generated</h1>
+            <p style='color:#64748b; font-size:14px;'>Optimized with High-CPC Keywords</p>
+            <div style='margin-top:20px;'>
+                <input value='{final_link}' style='width:100%; max-width:500px; padding:15px; border:1px solid #cbd5e1; border-radius:8px; font-family:monospace; font-size:16px; color:#0f172a;' readonly onclick="this.select();">
+            </div>
+            <p style='color:#94a3b8; font-size:12px; margin-top:10px;'>Category: {cat.upper()} | Base: {slug_base}</p>
+            <br>
+            <a href='/' style='text-decoration:none; color:#2563eb; font-weight:bold;'>Create Another</a>
+        </div>
+    """)
     resp.set_cookie('traficoon_limit', today, max_age=86400)
     return resp
 
