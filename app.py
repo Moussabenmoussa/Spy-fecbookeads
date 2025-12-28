@@ -303,12 +303,9 @@ def public_shorten():
 # --- الغسالة ---
 
 
-from flask import Flask, request, make_response
-from urllib.parse import urlparse
-import html, random, re, json
-from datetime import datetime
 
-app = Flask(__name__)
+
+        # 👇👇👇 الصق هذا الكود كاملاً بدلاً من دالة الغسالة القديمة 👇👇👇
 
 HIGH_CPC_HASHES = [
     "insurance-claim-quote-auto",
@@ -336,11 +333,9 @@ def is_safe_url(url: str) -> bool:
         return False
 
 def match_contextual_hash(url: str) -> str:
-    # البحث عن هاش مناسب لمحتوى الرابط
     for pattern, hash_val in HASH_MAP.items():
         if re.search(pattern, url, re.IGNORECASE):
             return hash_val
-    # إذا لم نجد، نختار عشوائياً
     return random.choice(HIGH_CPC_HASHES)
 
 @app.route('/redirect')
@@ -350,30 +345,33 @@ def laundry():
     if not url or not is_safe_url(url):
         return "Invalid Request", 400
 
-    # 1. ✅ استراتيجية UTM الذكية (Time-Based)
+    # 1. استراتيجية UTM الذكية (Time-Based)
     if "utm_source" not in url:
-        hour = datetime.utcnow().hour
+        hour = datetime.datetime.utcnow().hour
         campaign_time = "morning" if 6 <= hour < 12 else "evening" if 18 <= hour < 24 else "daytime"
         
         separator = "&" if "?" in url else "?"
         url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign={campaign_time}"
 
-    # 2. ✅ حقن الهاش السياقي (Contextual Hash)
+    # 2. حقن الهاش السياقي (Contextual Hash)
     if "#" not in url:
         fake_context = match_contextual_hash(url)
         url += f"#{fake_context}"
 
-    # تجهيز الرابط للـ HTML (لمنع XSS) وللـ JS (بدون تخريب الرموز)
+    # تجهيز الرابط
     safe_url_html = html.escape(url, quote=True)
     
-    # 3. ✅ رسائل تحميل عشوائية (لإعطاء طابع بشري خفيف)
-    messages = ["Loading...", "Redirecting...", "Please wait...", "Connecting..."]
+    # 3. رسائل تحميل احترافية (إنجليزية)
+    messages = [
+        "Redirecting you securely...",
+        "Establishing secure connection...",
+        "Loading destination...",
+        "Please wait, verifying link...",
+        "Processing request..."
+    ]
     message = random.choice(messages)
 
-    # 4. ✅ الصفحة النهائية (Clean & Fast)
-    # - Meta Refresh: 0 (فوري)
-    # - Referrer: no-referrer (مخفي)
-    # - JS Backup: يعمل فوراً
+    # 4. الصفحة النهائية (سريعة - بدون مصدر - بدون بصمة)
     html_page = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -383,9 +381,8 @@ def laundry():
         <meta name="referrer" content="no-referrer">
         <meta http-equiv="refresh" content="0;url={safe_url_html}">
         <title>{message}</title>
-        <style>body{{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f8fafc;color:#64748b;font-size:14px;}}</style>
+        <style>body{{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f8fafc; color:#64748b; font-size:14px;}}</style>
         <script>
-            // التحويل الفوري عبر الجافاسكريبت كاحتياط
             window.location.replace("{url}"); 
         </script>
     </head>
@@ -399,6 +396,12 @@ def laundry():
     """
 
     return make_response(html_page)
+
+
+         
+         
+
+    
 
 
 
