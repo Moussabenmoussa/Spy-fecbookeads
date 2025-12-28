@@ -3,9 +3,9 @@ from flask import Flask, render_template_string, request, redirect, Response, ma
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import templates
-import frontend  # 🆕 استيراد ملف الواجهة الجديد
+import frontend  # ✅ 1. استيراد ملف الواجهة الجديد (مهم جداً)
 
-# --- مقالات الطوارئ ---
+# --- مقالات الطوارئ (Emergency Articles) ---
 DEFAULT_ARTICLES = [
     {
         "title": "Cloud Distribution and Protocol Integrity",
@@ -21,7 +21,7 @@ DEFAULT_ARTICLES = [
 
 app = Flask(__name__)
 
-# --- Database Setup ---
+# --- إعدادات قاعدة البيانات (Database Setup) ---
 raw_uri = os.getenv("MONGO_URI", "").strip()
 MONGO_URI = re.sub(r'[\s\n\r]', '', raw_uri)
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "himsounin1$")
@@ -31,7 +31,7 @@ db = client['elite_system_v8']
 links_col = db['links']
 settings_col = db['settings']
 articles_col = db['articles']
-public_logs = db['public_logs'] # 🆕 سجل الروابط العامة للحماية
+public_logs = db['public_logs'] # ✅ سجل الروابط العامة للحماية
 
 def get_settings():
     s = settings_col.find_one({"type": "global"})
@@ -46,19 +46,19 @@ def get_client_ip():
         return request.headers.getlist("X-Forwarded-For")[0]
     return request.remote_addr
 
-# --- 🆕 Route: الصفحة الرئيسية العامة (TRAFICOON Home) ---
+# --- ✅ 2. المسار الجديد: الصفحة الرئيسية (TRAFICOON Home) ---
+# هذا هو الكود الذي كان ينقصك ويسبب خطأ 404
 @app.route('/', methods=['GET'])
 def home():
-    # 1. جلب النيتشات المتوفرة من قاعدة البيانات
-    # نبحث عن كل التصنيفات الموجودة في المقالات ونزيل التكرار
+    # جلب النيتشات المتوفرة من قاعدة البيانات لعرضها في القائمة
     niches = articles_col.distinct("category")
-    # تنظيف القائمة (إزالة الفراغات والقيم الفارغة)
     clean_niches = [n for n in niches if n and n.strip()]
-    if not clean_niches: clean_niches = ["General", "Tech", "News"] # قيم افتراضية
+    if not clean_niches: clean_niches = ["General", "Tech", "News"]
     
+    # عرض ملف الواجهة الجديد
     return render_template_string(frontend.HOME_HTML, niches=clean_niches)
 
-# --- 🆕 Route: إنشاء رابط عام (مع حماية مشددة) ---
+# --- ✅ 3. المسار الجديد: إنشاء رابط عام (مع حماية) ---
 @app.route('/public/shorten', methods=['POST'])
 def public_shorten():
     target_url = request.form.get('target_url')
@@ -66,16 +66,16 @@ def public_shorten():
     ip = get_client_ip()
     today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
     
-    # 🛡️ الحماية 1: فحص الكوكيز (هل أنشأ رابطاً اليوم؟)
+    # الحماية 1: فحص الكوكيز
     if request.cookies.get('traficoon_limit') == today:
         return "<h3>Rate Limit Exceeded: One link per day allowed. (Cookie)</h3>", 429
 
-    # 🛡️ الحماية 2: فحص قاعدة البيانات (هل هذا IP أنشأ رابطاً اليوم؟)
+    # الحماية 2: فحص قاعدة البيانات
     log_check = public_logs.find_one({"ip": ip, "date": today})
     if log_check:
         return "<h3>Rate Limit Exceeded: One link per day allowed. (IP)</h3>", 429
 
-    # ✅ السماح بالإنشاء
+    # السماح بالإنشاء
     title = f"Public Link - {category.upper()}"
     slug = re.sub(r'[^a-z0-9]', '', category.lower()) + "-" + os.urandom(3).hex()
     
@@ -84,18 +84,17 @@ def public_shorten():
         "target_url": target_url,
         "slug": slug,
         "clicks": 0,
-        "tag": category, # ربط الرابط بالنيتش المختار
+        "tag": category,
         "is_public": True,
         "created_at": datetime.datetime.utcnow()
     })
     
-    # تسجيل العملية للحظر المستقبلي
+    # تسجيل المخالفة
     public_logs.insert_one({"ip": ip, "date": today})
 
-    # بناء الرابط النهائي
+    # النتيجة
     final_link = f"{request.host_url}v/{slug}"
     
-    # الرد مع زرع كوكيز الحظر
     resp = make_response(f"""
     <div style='font-family:sans-serif; text-align:center; padding:50px; background:#f0f9ff;'>
         <h1 style='color:#0369a1;'>Link Generated Successfully! ✅</h1>
@@ -104,13 +103,10 @@ def public_shorten():
         <a href='/' style='display:block; margin-top:30px;'>Back Home</a>
     </div>
     """)
-    # ضبط الكوكيز لينتهي بنهاية اليوم
     resp.set_cookie('traficoon_limit', today, max_age=86400)
     return resp
 
-# --- باقي المسارات (Gateway, Redirect, Admin) كما هي بالضبط ---
-# (لم أغير فيها شيئاً، فقط نسختها لتعمل مع التحديث الجديد)
-
+# --- دالة ويكيبيديا والمقالات ---
 def get_wiki_content(slug):
     try:
         clean_keyword = slug.rsplit('-', 1)[0].replace('-', ' ')
@@ -126,6 +122,7 @@ def get_wiki_content(slug):
     except: pass
     return None
 
+# --- المسار القديم: بوابة التحويل (Gateway) ---
 @app.route('/v/<slug>')
 def gateway(slug):
     ua = request.headers.get('User-Agent', '').lower()
@@ -153,6 +150,7 @@ def gateway(slug):
     
     return render_template_string(templates.LANDING_HTML, target_url=link['target_url'], s=get_settings(), article=final_article, slug=slug)
 
+# --- المسار القديم: الغسالة (Laundry) ---
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
@@ -164,6 +162,7 @@ def laundry():
             url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign=search_result"
     return f'''<html><head><meta name="referrer" content="no-referrer"><script>window.location.replace("{url}");</script></head><body style="background:#fff;"></body></html>'''
 
+# --- المسار القديم: الأدمن (Admin) ---
 @app.route('/admin')
 def admin():
     if request.args.get('pw') != ADMIN_PASSWORD: return "Denied", 403
@@ -171,7 +170,7 @@ def admin():
     articles = list(articles_col.find().sort("_id", -1))
     return render_template_string(templates.ADMIN_HTML, links=links, articles=articles, s=get_settings(), host_url=request.host_url)
 
-# أوامر الأدمن
+# --- أوامر الأدمن ---
 @app.route('/admin/create_link', methods=['POST'])
 def create_link():
     title = request.form['title']
