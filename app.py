@@ -2,6 +2,7 @@ import os, re, json, random, requests, datetime
 from flask import Flask, render_template_string, request, redirect, Response, make_response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from urllib.parse import urlparse
 import templates
 import frontend
 
