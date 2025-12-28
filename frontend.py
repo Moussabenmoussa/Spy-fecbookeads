@@ -7,10 +7,10 @@ HOME_HTML = """
 <html lang="en">
 <head>
 
-<link rel="preconnect" href="https://images.weserv.nl" crossorigin>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://images.weserv.nl" crossorigin>
+    
     <title>TRAFICOON | Enterprise Traffic Intelligence</title>
     <link rel="icon" type="image/png" href="https://b.top4top.io/p_3649zxju10.png">
     <meta name="description" content="Leading source for technology analysis, secure distribution protocols, and financial insights.">
