@@ -276,5 +276,50 @@ def update_settings():
     settings_col.update_one({"type": "global"}, {"$set": {"stuffing_url": request.form['stuffing_url'], "exit_url": request.form['exit_url']}})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
+# --- 🆕 إضافة: محتوى الصفحات الثابتة للمجلة (V11 Update) ---
+STATIC_PAGES = {
+    "about": """
+        <p><strong>TRAFICOON Media Inc.</strong> is a premier digital intelligence firm established in 2023. We specialize in aggregating high-value market data across Technology, Finance, and Health sectors.</p>
+        <p>Our mission is to provide actionable insights and transparent distribution protocols for the modern web. With a team of dedicated analysts and engineers, we ensure that every piece of content delivered meets the highest standards of accuracy and relevance.</p>
+        <h2>Our Vision</h2>
+        <p>To bridge the gap between complex market trends and everyday users through secure, simplified content delivery systems.</p>
+    """,
+    "privacy": """
+        <p>Last Updated: December 2025</p>
+        <p>At TRAFICOON, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your information.</p>
+        <h2>1. Information Collection</h2>
+        <p>We collect minimal data necessary for operational purposes, including IP addresses for security verification and broad geographic analytics.</p>
+        <h2>2. Cookies</h2>
+        <p>We use secure cookies to enhance user experience and prevent bot activity. By using our service, you consent to our use of cookies in accordance with GDPR regulations.</p>
+        <h2>3. Third-Party Disclosure</h2>
+        <p>We do not sell, trade, or otherwise transfer your personally identifiable information to outside parties unless required by law.</p>
+    """,
+    "terms": """
+        <p>By accessing TRAFICOON, you agree to be bound by these Terms of Service.</p>
+        <h2>1. Use License</h2>
+        <p>Permission is granted to temporarily download one copy of the materials (information or software) on TRAFICOON's website for personal, non-commercial transitory viewing only.</p>
+        <h2>2. Disclaimer</h2>
+        <p>The materials on TRAFICOON's website are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties of merchantability.</p>
+    """,
+    "contact": """
+        <p>We are here to help. For general inquiries, partnership opportunities, or media requests, please reach out to our support team.</p>
+        <h2>Headquarters</h2>
+        <p>101 Tech Plaza, Silicon Valley, CA 94000<br>United States</p>
+        <h2>Email Support</h2>
+        <p><strong>General:</strong> contact@traficoon.media<br><strong>Legal:</strong> legal@traficoon.media</p>
+        <p><em>Please allow up to 48 hours for a response from our team.</em></p>
+    """
+}
+
+@app.route('/p/<page_name>')
+def static_page(page_name):
+    # تحويل الاسم لعنوان جميل (مثال: privacy -> Privacy Policy)
+    titles = {"about": "About Us", "privacy": "Privacy Policy", "terms": "Terms of Service", "contact": "Contact Support"}
+    content = STATIC_PAGES.get(page_name)
+    
+    if not content: return redirect('/')
+    
+    return render_template_string(frontend.PAGE_HTML, title=titles.get(page_name, page_name.title()), content=content)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
