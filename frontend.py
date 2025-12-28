@@ -8,6 +8,9 @@ HOME_HTML = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRAFICOON | Enterprise Traffic Intelligence</title>
+
+<link rel="icon" type="image/png" href="https://b.top4top.io/p_3649zxju10.png">
+    
     <meta name="description" content="Leading source for technology analysis, secure distribution protocols, and financial insights.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Merriweather:ital@0;1&display=swap" rel="stylesheet">
