@@ -75,7 +75,7 @@ def home():
     query = {"category": category_filter} if category_filter else {}
     
     # 2. جلب المقالات الحقيقية من القاعدة (أحدث 12 مقال)
-    articles_cursor = articles_col.find(query).sort("created_at", -1).limit(12)
+    articles_cursor = articles_col.find(query).sort("created_at", -1).limit(30)
     articles = list(articles_cursor)
     
     # 3. جلب قائمة الأقسام للقائمة العلوية
