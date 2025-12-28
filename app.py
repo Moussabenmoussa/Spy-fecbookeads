@@ -67,6 +67,50 @@ def ping_engines(host_url):
         try: requests.get(engine.format(host=host_url), timeout=2)
         except: pass
 
+# 👇 دالة حقن الاقتراحات الذكية (Don't Miss) 👇
+def inject_recommendation(html_content, category, current_id):
+    try:
+        # 1. البحث عن مقال آخر في نفس القسم (غير المقال الحالي)
+        related = articles_col.find_one({
+            "category": category,
+            "_id": {"$ne": ObjectId(current_id)}
+        })
+        
+        # إذا لم نجد في نفس القسم، نأتي بأي مقال آخر
+        if not related:
+            related = articles_col.find_one({"_id": {"$ne": ObjectId(current_id)}})
+
+        if related:
+            # 2. تصميم الصندوق الاحترافي (Professional Card)
+            card = f"""
+            <div style="border-left: 4px solid #2563eb; background: #f8fafc; padding: 20px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+                <span style="display: block; color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Don't Miss</span>
+                <a href="/read/{related['_id']}" style="color: #0f172a; font-size: 17px; font-weight: 700; text-decoration: none; line-height: 1.4;">
+                    {related['title']}
+                </a>
+            </div>
+            """
+            
+            # 3. عملية الحقن بعد الفقرة الثانية
+            # نقسم النص عند كل قفلة فقرة </p>
+            paragraphs = html_content.split('</p>')
+            
+            # إذا كان المقال طويلاً بما يكفي (أكثر من فقرتين)
+            if len(paragraphs) > 2:
+                # نلصق الصندوق بعد الفقرة الثانية (Index 1)
+                paragraphs[1] += "</p>" + card
+                # نعيد تجميع النص مرة أخرى
+                return " ".join(paragraphs[0:2]) + " ".join(paragraphs[2:])
+                
+    except Exception as e:
+        print(f"Injection Error: {e}")
+        
+    return html_content # إذا حدث خطأ نعيد النص كما هو
+
+
+
+
+
 # --- ✅ 1. الصفحة الرئيسية (المجلة الحقيقية Dynamic Magazine) ---
 @app.route('/', methods=['GET'])
 def home():
@@ -98,6 +142,12 @@ def read_article(id):
         if not art: return redirect('/')
         
         s = get_settings()
+
+
+# تفعيل الحقن للقارئ العضوي أيضاً
+        art['body'] = inject_recommendation(art['body'], art.get('category'), art['_id'])
+
+        
         
         return render_template_string(
             templates.LANDING_HTML,
@@ -132,6 +182,15 @@ def gateway(slug, category=None):
         if random_art: final_article = random_art[0]
     
     if not final_article: final_article = random.choice(DEFAULT_ARTICLES)
+
+
+    # 👇 تفعيل حقن الاقتراحات (Don't Miss) 👇
+    if final_article and '_id' in final_article:
+        final_article['body'] = inject_recommendation(
+            final_article.get('body', ''), 
+            final_article.get('category', 'general'), 
+            final_article['_id']
+        )
 
     # تحسينات النخبة (Elite Opts)
     if 'body' in final_article:
