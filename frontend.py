@@ -29,7 +29,7 @@ HOME_HTML = """
     <nav class="absolute top-0 w-full z-50 p-6">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <img src="YOUR_LOGO_URL_HERE" alt="TRAFICOON" class="h-10 w-auto object-contain">
+                <img src="https://c.top4top.io/p_3649imsab0.png" alt="TRAFICOON" class="h-10 w-auto object-contain">
                 <span class="text-white font-bold text-xl tracking-tight hidden" id="text-logo">TRAFICOON</span>
             </div>
             <div class="hidden md:flex gap-8 text-sm font-medium text-slate-300">
