@@ -1,4 +1,4 @@
-import os, re, json, random, requests, datetime
+import os, re, json, random, requests, datetime, html  # 👈 أضفنا html هنا
 from flask import Flask, render_template_string, request, redirect, Response, make_response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -302,10 +302,7 @@ def public_shorten():
 
 # --- الغسالة ---
 
-
-
-
-        # 👇👇👇 الصق هذا الكود كاملاً بدلاً من دالة الغسالة القديمة 👇👇👇
+# 👇👇👇 انسخ هذا البلوك الكامل وضعه بدلاً من دالة الغسالة القديمة وكل ما يتعلق بها 👇👇👇
 
 HIGH_CPC_HASHES = [
     "insurance-claim-quote-auto",
@@ -338,6 +335,7 @@ def match_contextual_hash(url: str) -> str:
             return hash_val
     return random.choice(HIGH_CPC_HASHES)
 
+# --- الغسالة المطورة (V3: Ultimate Referrer Killer) ---
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
@@ -371,7 +369,7 @@ def laundry():
     ]
     message = random.choice(messages)
 
-    # 4. الصفحة النهائية (سريعة - بدون مصدر - بدون بصمة)
+    # 4. الصفحة النهائية (مع كود الحماية الصارم)
     html_page = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -383,6 +381,7 @@ def laundry():
         <title>{message}</title>
         <style>body{{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f8fafc; color:#64748b; font-size:14px;}}</style>
         <script>
+            // طبقة حماية JS
             window.location.replace("{url}"); 
         </script>
     </head>
@@ -395,13 +394,12 @@ def laundry():
     </html>
     """
 
-    return make_response(html_page)
+    # 🔥 الأمر العسكري للمتصفح بقتل المصدر (Header Injection) 🔥
+    response = make_response(html_page)
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
-         
-         
-
-    
 
 
 
