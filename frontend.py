@@ -20,9 +20,18 @@ HOME_HTML = """
         .btn-shine { position: relative; overflow: hidden; }
         .btn-shine::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%); transform: skewX(-25deg); animation: shine 3s infinite; }
         @keyframes shine { 100% { left: 200%; } }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }        
+       .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+
+
+       
     </style>
+   
 </head>
 <body class="antialiased flex flex-col min-h-screen">
 
@@ -59,7 +68,8 @@ HOME_HTML = """
         {% if articles %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for art in articles %}
-            <article class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden transition duration-300 card-hover flex flex-col h-full">
+           
+            <article class="article-item {% if loop.index > 3 %}hidden{% endif %} bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden transition duration-300 card-hover flex flex-col h-full">
                 <a href="/read/{{ art._id }}" class="block h-52 overflow-hidden relative group">
                     {% if art.image %}
                     
@@ -82,6 +92,12 @@ HOME_HTML = """
             </article>
             {% endfor %}
         </div>
+<div id="loadMoreBtn" class="mt-12 text-center {% if articles|length <= 3 %}hidden{% endif %}">
+            <button onclick="showMoreArticles()" class="group px-8 py-3 border border-slate-300 text-slate-500 font-bold text-xs uppercase tracking-widest rounded-full hover:border-blue-600 hover:text-blue-600 hover:bg-white transition-all duration-300">
+                Load More <span class="inline-block transition-transform group-hover:translate-y-0.5">↓</span>
+            </button>
+        </div>
+        
         {% else %}
         <div class="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
             <h3 class="text-lg font-bold text-slate-900">System Initializing...</h3>
@@ -272,6 +288,31 @@ HOME_HTML = """
                 document.getElementById('finalLinkContainer').innerHTML = `<input value="${link}" class="bg-transparent w-full outline-none" readonly onclick="this.select()">`;
             } catch(e) { alert('Error'); }
         }
+
+
+function showMoreArticles() {
+            // نختار كل المقالات المخفية
+            const hiddenArticles = document.querySelectorAll('.article-item.hidden');
+            
+            // نظهر أول 3 منها فقط
+            for (let i = 0; i < 3; i++) {
+                if (hiddenArticles[i]) {
+                    hiddenArticles[i].classList.remove('hidden');
+                    // إضافة أنيميشن بسيط للظهور
+                    hiddenArticles[i].classList.add('animate-fade-in'); 
+                }
+            }
+
+            // إذا لم يتبق مقالات مخفية، نخفي الزر
+            if (document.querySelectorAll('.article-item.hidden').length === 0) {
+                document.getElementById('loadMoreBtn').classList.add('hidden');
+            }
+        }
+
+
+
+
+        
     </script>
 
 
