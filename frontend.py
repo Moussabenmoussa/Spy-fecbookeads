@@ -176,6 +176,59 @@ HOME_HTML = """
         </div>
     </div>
 
+
+
+<div id="sidebarBackdrop" onclick="closeSidebar()" class="fixed inset-0 bg-slate-900/50 z-50 hidden transition-opacity opacity-0 backdrop-blur-sm"></div>
+    
+    <div id="sidebarDrawer" class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+        
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <img src="https://b.top4top.io/p_3649zxju10.png" class="h-8 w-auto">
+                <span class="font-black text-lg text-slate-900">MENU</span>
+            </div>
+            <button onclick="closeSidebar()" class="text-slate-400 hover:text-red-500 transition p-2 bg-slate-50 rounded-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-8">
+            <div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Markets & Sectors</h4>
+                <div class="space-y-3 flex flex-col">
+                    {% for niche in niches %}
+                    <a href="/?category={{ niche }}" class="text-slate-700 font-bold text-sm hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition capitalize flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> {{ niche }}
+                    </a>
+                    {% endfor %}
+                    <a href="/" class="text-slate-700 font-bold text-sm hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-slate-300"></span> Latest Reports
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Corporate</h4>
+                <div class="space-y-3 flex flex-col text-sm font-medium text-slate-600">
+                    <a href="/p/about" class="hover:text-blue-600 transition">About Us</a>
+                    <a href="/p/contact" class="hover:text-blue-600 transition">Contact Support</a>
+                    <a href="/p/privacy" class="hover:text-blue-600 transition">Privacy Policy</a>
+                    <a href="/p/terms" class="hover:text-blue-600 transition">Terms of Service</a>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100">
+                <button onclick="openModal(); closeSidebar()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg">Client Access</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    
+
     <script>
 
 
@@ -224,51 +277,10 @@ HOME_HTML = """
 
 
 
-<div id="sidebarBackdrop" onclick="closeSidebar()" class="fixed inset-0 bg-slate-900/50 z-50 hidden transition-opacity opacity-0 backdrop-blur-sm"></div>
-    
-    <div id="sidebarDrawer" class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
-        
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <img src="https://b.top4top.io/p_3649zxju10.png" class="h-8 w-auto">
-                <span class="font-black text-lg text-slate-900">MENU</span>
-            </div>
-            <button onclick="closeSidebar()" class="text-slate-400 hover:text-red-500 transition p-2 bg-slate-50 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
 
-        <div class="p-6 space-y-8">
-            <div>
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Markets & Sectors</h4>
-                <div class="space-y-3 flex flex-col">
-                    {% for niche in niches %}
-                    <a href="/?category={{ niche }}" class="text-slate-700 font-bold text-sm hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition capitalize flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> {{ niche }}
-                    </a>
-                    {% endfor %}
-                    <a href="/" class="text-slate-700 font-bold text-sm hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-slate-300"></span> Latest Reports
-                    </a>
-                </div>
-            </div>
 
-            <div>
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Corporate</h4>
-                <div class="space-y-3 flex flex-col text-sm font-medium text-slate-600">
-                    <a href="/p/about" class="hover:text-blue-600 transition">About Us</a>
-                    <a href="/p/contact" class="hover:text-blue-600 transition">Contact Support</a>
-                    <a href="/p/privacy" class="hover:text-blue-600 transition">Privacy Policy</a>
-                    <a href="/p/terms" class="hover:text-blue-600 transition">Terms of Service</a>
-                </div>
-            </div>
-
-            <div class="pt-6 border-t border-slate-100">
-                <button onclick="openModal(); closeSidebar()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg">Client Access</button>
-            </div>
-        </div>
-    </div>
-            
+                    
+                    
             
 
 
