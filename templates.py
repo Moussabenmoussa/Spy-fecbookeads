@@ -1,5 +1,4 @@
 # templates.py
-
 # --- 1. User Landing Page (Safe & Professional - NO CHANGES HERE) ---
 LANDING_HTML = """
 <!DOCTYPE html>
