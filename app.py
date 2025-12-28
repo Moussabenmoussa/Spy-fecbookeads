@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import templates
 
-# --- مقالات الطوارئ (الخطة ج: تعمل فقط إذا فشل كل شيء) ---
+# --- مقالات الطوارئ (الخطة د: تعمل فقط إذا فشل كل شيء) ---
 DEFAULT_ARTICLES = [
     {
         "title": "Cloud Distribution and Protocol Integrity",
@@ -31,7 +31,7 @@ client = MongoClient(MONGO_URI)
 db = client['elite_system_v8']
 links_col = db['links']
 settings_col = db['settings']
-articles_col = db['articles']  # مجموعة جديدة للمقالات الاحترافية
+articles_col = db['articles']
 
 def get_settings():
     s = settings_col.find_one({"type": "global"})
@@ -41,7 +41,7 @@ def get_settings():
         return default
     return s
 
-# --- دالة ويكيبيديا الذكية (الخطة ب) ---
+# --- دالة ويكيبيديا الذكية (الخطة ج) ---
 def get_wiki_content(slug):
     try:
         clean_keyword = slug.rsplit('-', 1)[0].replace('-', ' ')
@@ -58,7 +58,7 @@ def get_wiki_content(slug):
             if 'extract' in summary_res:
                 return {
                     "title": summary_res['title'],
-                    "body": f"<p>{summary_res['extract']}</p>" # تنسيق بسيط
+                    "body": f"<p>{summary_res['extract']}</p>"
                 }
     except: pass
     return None
@@ -69,32 +69,42 @@ def get_wiki_content(slug):
 def gateway(slug):
     ua = request.headers.get('User-Agent', '').lower()
     
-    # --- نظام اختيار المحتوى (The Priority System) ---
-    final_article = None
+    # 1. جلب الرابط أولاً لمعرفة التصنيف (Tag) الخاص به
+    link = links_col.find_one({"slug": slug})
+    if not link: return "Invalid Link", 404
 
-    # 1. الأولوية الأولى: هل يوجد مقال HTML احترافي في القاعدة؟
-    # نسحب مقالاً عشوائياً من المقالات التي أضفتها أنت
-    db_articles = list(articles_col.aggregate([{"$sample": {"size": 1}}]))
-    if db_articles:
-        final_article = db_articles[0]
+    # --- نظام اختيار المحتوى الذكي (Contextual Engine) ---
+    final_article = None
+    link_tag = link.get('tag', '').strip().lower() # جلب تصنيف الرابط
+
+    # أ. الأولوية الأولى: البحث عن مقال مطابق للتصنيف (Perfect Match)
+    if link_tag:
+        matched_articles = list(articles_col.aggregate([
+            {"$match": {"category": link_tag}},
+            {"$sample": {"size": 1}}
+        ]))
+        if matched_articles:
+            final_article = matched_articles[0]
+
+    # ب. الأولوية الثانية: إذا لم نجد تطابق، نأخذ أي مقال احترافي عشوائي من الأدمن
+    if not final_article:
+        db_articles = list(articles_col.aggregate([{"$sample": {"size": 1}}]))
+        if db_articles:
+            final_article = db_articles[0]
     
-    # 2. الأولوية الثانية: إذا لم نجد، نحاول مع ويكيبيديا
+    # ج. الأولوية الثالثة: ويكيبيديا
     if not final_article:
         final_article = get_wiki_content(slug)
     
-    # 3. الأولوية الثالثة: مقالات الطوارئ
+    # د. الأولوية الرابعة: الطوارئ
     if not final_article:
         final_article = random.choice(DEFAULT_ARTICLES)
 
     # --- نظام التخفي (Cloaking) ---
-    # البوتات ترى فقط عنوان ونص المقال (بدون تصميم الصفحة المعقد)
     if any(bot in ua for bot in ["google", "facebook", "bing", "bot", "crawler"]):
-        return f"<h1>{final_article['title']}</h1><div>{final_article['body']}</div>"
+        return f"<h1>{final_article['title']}</h1><div>{final_article.get('body', '')}</div>"
     
-    # --- التحقق من الرابط ---
-    link = links_col.find_one({"slug": slug})
-    if not link: return "Invalid Link", 404
-    
+    # تسجيل النقرة
     links_col.update_one({"slug": slug}, {"$inc": {"clicks": 1}})
     
     return render_template_string(
@@ -108,15 +118,13 @@ def gateway(slug):
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
-    # نستقبل نوع الترافيك من الرابط
+    # نستقبل نوع الترافيك
     traffic_type = request.args.get('type') 
     
     if not url: return redirect('/')
     
-    # الشرط الذكي:
-    # نطبق التمويه إذا كان الرابط من علي إكسبريس، أو إذا طلبنا ذلك صراحة (للرابط النهائي)
+    # المنطق المطور: تطبيق التمويه على علي إكسبريس وأي رابط "organic"
     if "aliexpress.com" in url or traffic_type == "organic":
-        # نتأكد أولاً أن الرابط لا يحتوي أصلاً على UTM لتجنب التكرار
         if "utm_source" not in url:
             separator = "&" if "?" in url else "?"
             url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign=search_result"
@@ -136,16 +144,18 @@ def laundry():
 def admin():
     if request.args.get('pw') != ADMIN_PASSWORD: return "Denied", 403
     links = list(links_col.find().sort("_id", -1))
-    articles = list(articles_col.find().sort("_id", -1)) # جلب المقالات
+    articles = list(articles_col.find().sort("_id", -1))
     return render_template_string(templates.ADMIN_HTML, links=links, articles=articles, s=get_settings(), host_url=request.host_url)
 
-# --- إدارة الروابط ---
+# --- إدارة الروابط (مع التصنيف Tag) ---
 @app.route('/admin/create_link', methods=['POST'])
 def create_link():
     title = request.form['title']
     target = request.form['target_url']
+    tag = request.form.get('tag', '').strip().lower() # استقبال التصنيف
+    
     slug = re.sub(r'[^a-z0-9]', '-', title.lower()).strip('-') + "-" + os.urandom(2).hex()
-    links_col.insert_one({"title": title, "target_url": target, "slug": slug, "clicks": 0})
+    links_col.insert_one({"title": title, "target_url": target, "slug": slug, "clicks": 0, "tag": tag})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
 @app.route('/admin/delete/<id>')
@@ -153,12 +163,14 @@ def delete_link(id):
     links_col.delete_one({"_id": ObjectId(id)})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
-# --- إدارة المقالات (الجديد) ---
+# --- إدارة المقالات (مع التصنيف Category) ---
 @app.route('/admin/add_article', methods=['POST'])
 def add_article():
     title = request.form['title']
     html_content = request.form['html_content']
-    articles_col.insert_one({"title": title, "body": html_content})
+    category = request.form.get('category', '').strip().lower() # استقبال التصنيف
+    
+    articles_col.insert_one({"title": title, "body": html_content, "category": category})
     return redirect(f"/admin?pw={ADMIN_PASSWORD}")
 
 @app.route('/admin/delete_article/<id>')
