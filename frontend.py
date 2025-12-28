@@ -6,6 +6,9 @@ HOME_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<link rel="preconnect" href="https://images.weserv.nl" crossorigin>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRAFICOON | Enterprise Traffic Intelligence</title>
