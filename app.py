@@ -370,6 +370,7 @@ def laundry():
     message = random.choice(messages)
 
     # 4. الصفحة النهائية (مع كود الحماية الصارم)
+  
     html_page = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -377,16 +378,23 @@ def laundry():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="referrer" content="no-referrer">
-        <meta http-equiv="refresh" content="0;url={safe_url_html}">
+        <meta http-equiv="refresh" content="1.5;url={safe_url_html}">
         <title>{message}</title>
-        <style>body{{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f8fafc; color:#64748b; font-size:14px;}}</style>
+        <style>
+            body{{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; background:#f8fafc; color:#64748b; font-size:14px;}}
+            .spinner {{width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}}
+            @keyframes spin {{0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }}}}
+        </style>
         <script>
-            // طبقة حماية JS
-            window.location.replace("{url}"); 
+            // تأخير الجافاسكريبت أيضاً ليتزامن مع الميتا
+            setTimeout(function() {{
+                window.location.replace("{url}");
+            }}, 1500); 
         </script>
     </head>
     <body>
-        <p>{message}</p>
+        <div class="spinner"></div>
+        <p><b>Secure Gateway:</b> {message}</p>
         <noscript>
             <a href="{safe_url_html}" rel="noreferrer">Click here to continue</a>
         </noscript>
