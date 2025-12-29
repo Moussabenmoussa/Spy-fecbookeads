@@ -302,111 +302,118 @@ def public_shorten():
 
 # --- الغسالة ---
 
-# 👇👇👇 انسخ هذا البلوك الكامل وضعه بدلاً من دالة الغسالة القديمة وكل ما يتعلق بها 👇👇👇
 
-HIGH_CPC_HASHES = [
-    "insurance-claim-quote-auto",
-    "mesothelioma-lawyer-attorney-california",
-    "structured-settlement-annuity-companies",
-    "business-voip-phone-services-cloud",
-    "online-degree-education-mba-programs",
-    "donate-car-to-charity-california"
+
+
+
+
+# 👇👇👇 استبدل دالة laundry القديمة بهذا البلوك فقط 👇👇👇
+
+# قائمة البوتات (للحماية)
+BOT_USER_AGENTS = [
+    r"facebookexternalhit", r"Facebot", r"Twitterbot", r"LinkedInBot",
+    r"WhatsApp", r"TelegramBot", r"Googlebot", r"AdsBot", r"crawler", 
+    r"curl", r"wget", r"python-requests", r"Mediapartners-Google"
 ]
 
-HASH_MAP = {
-    r"insurance|claim|auto": "insurance-claim-quote-auto",
-    r"lawyer|attorney|legal": "mesothelioma-lawyer-attorney-california",
-    r"settlement|annuity": "structured-settlement-annuity-companies",
-    r"voip|cloud|phone": "business-voip-phone-services-cloud",
-    r"mba|degree|education": "online-degree-education-mba-programs",
-    r"donate|car|charity": "donate-car-to-charity-california"
-}
+def is_bot(user_agent):
+    if not user_agent: return True
+    for bot in BOT_USER_AGENTS:
+        if re.search(bot, user_agent, re.IGNORECASE):
+            return True
+    return False
 
-def is_safe_url(url: str) -> bool:
-    try:
-        parsed = urlparse(url)
-        return parsed.scheme in ["http", "https"] and bool(parsed.netloc)
-    except:
-        return False
-
-def match_contextual_hash(url: str) -> str:
-    for pattern, hash_val in HASH_MAP.items():
-        if re.search(pattern, url, re.IGNORECASE):
-            return hash_val
-    return random.choice(HIGH_CPC_HASHES)
-
-# --- الغسالة المطورة (V3: Ultimate Referrer Killer) ---
+# --- الغسالة الماسية (Diamond V7: Engagement Booster) ---
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
+    user_agent = request.headers.get('User-Agent', '')
 
-    if not url or not is_safe_url(url):
+    # 1. طرد البوتات فوراً (حماية الحساب)
+    if is_bot(user_agent):
+        return redirect("/", code=302)
+
+    # 2. التحقق من الرابط
+    try:
+        parsed = urlparse(url)
+        if not (parsed.scheme in ["http", "https"] and bool(parsed.netloc)):
+            raise Exception
+    except:
         return "Invalid Request", 400
 
-    # 1. استراتيجية UTM الذكية (Time-Based)
-    if "utm_source" not in url:
-        hour = datetime.datetime.utcnow().hour
-        campaign_time = "morning" if 6 <= hour < 12 else "evening" if 18 <= hour < 24 else "daytime"
-        
-        separator = "&" if "?" in url else "?"
-        url += f"{separator}utm_source=google&utm_medium=organic&utm_campaign={campaign_time}"
+    # 3. تنظيف وتجهيز الرابط (تحويل المصدر لداخلي + تتبع)
+    separator = "&" if "?" in url else "?"
+    final_url = f"{url}{separator}utm_source=portal&utm_medium=premium_entry&utm_campaign=secure_verified"
+    safe_url_html = html.escape(final_url, quote=True)
 
-    # 2. حقن الهاش السياقي (Contextual Hash)
-    if "#" not in url:
-        fake_context = match_contextual_hash(url)
-        url += f"#{fake_context}"
-
-    # تجهيز الرابط
-    safe_url_html = html.escape(url, quote=True)
-    
-    # 3. رسائل تحميل احترافية (إنجليزية)
-    messages = [
-        "Redirecting you securely...",
-        "Establishing secure connection...",
-        "Loading destination...",
-        "Please wait, verifying link...",
-        "Processing request..."
-    ]
-    message = random.choice(messages)
-
-    # 4. الصفحة النهائية (مع كود الحماية الصارم)
-  
+    # 4. واجهة "التفاعل القسري" (Tap to Continue)
+    # الفكرة: الزائر يلمس الشاشة -> المتصفح يسجل تفاعل حقيقي -> جوجل تثق في الزيارة
     html_page = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta name="referrer" content="no-referrer">
-        <meta http-equiv="refresh" content="1.5;url={safe_url_html}">
-        <title>{message}</title>
+        <title>Security Gateway</title>
         <style>
-            body{{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; background:#f8fafc; color:#64748b; font-size:14px;}}
-            .spinner {{width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}}
-            @keyframes spin {{0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }}}}
+            body {{ margin: 0; padding: 0; background: #0f172a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
+            /* طبقة شفافة تغطي الشاشة بالكامل لالتقاط أي لمسة */
+            #click-layer {{ position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; background: rgba(0,0,0,0); cursor: pointer; -webkit-tap-highlight-color: transparent; }}
+            .btn {{ background: #3b82f6; padding: 16px 48px; border-radius: 99px; font-weight: 700; font-size: 18px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); transition: transform 0.1s; animation: pulse 2s infinite; pointer-events: none; }}
+            .msg {{ margin-top: 24px; font-size: 13px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8; }}
+            @keyframes pulse {{ 0% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }} 70% {{ transform: scale(1.05); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }} 100% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }} }}
         </style>
-        <script>
-            // تأخير الجافاسكريبت أيضاً ليتزامن مع الميتا
-            setTimeout(function() {{
-                window.location.replace("{url}");
-            }}, 1500); 
-        </script>
     </head>
     <body>
-        <div class="spinner"></div>
-        <p><b>Secure Gateway:</b> {message}</p>
-        <noscript>
-            <a href="{safe_url_html}" rel="noreferrer">Click here to continue</a>
-        </noscript>
+        <div class="btn" id="main-btn">Tap to Continue</div>
+        <p class="msg">VERIFYING CONNECTION...</p>
+        
+        <div id="click-layer"></div>
+        <a id="exit-link" href="{safe_url_html}" rel="noreferrer" style="display:none;"></a>
+
+        <script>
+            // A. مصيدة زر الرجوع (تبقي الزائر داخل الموقع)
+            try {{
+                history.pushState(null, null, location.href);
+                window.onpopstate = function () {{
+                    history.pushState(null, null, location.href);
+                }};
+            }} catch(e) {{}}
+
+            // B. تحميل مسبق للصفحة الهدف (لسرعة الفتح)
+            const prefetch = document.createElement('link');
+            prefetch.rel = 'prefetch'; prefetch.href = "{safe_url_html}";
+            document.head.appendChild(prefetch);
+
+            // C. تنفيذ التحويل عند اللمس
+            const layer = document.getElementById('click-layer');
+            const link = document.getElementById('exit-link');
+            let clicked = false;
+
+            function go() {{
+                if(clicked) return; clicked = true;
+                // تأثير بصري
+                document.getElementById('main-btn').style.background = "#10b981";
+                document.getElementById('main-btn').innerText = "VERIFIED";
+                // الانتظار 100 جزء من الثانية ثم النقر
+                setTimeout(() => link.click(), 100);
+            }}
+
+            layer.addEventListener('click', go);
+            layer.addEventListener('touchstart', go);
+        </script>
     </body>
     </html>
     """
 
-    # 🔥 الأمر العسكري للمتصفح بقتل المصدر (Header Injection) 🔥
     response = make_response(html_page)
     response.headers['Referrer-Policy'] = 'no-referrer'
+    # منع الكاش لضمان مرور الزائر على الغسالة كل مرة
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
     return response
 
+# 👆👆👆 انتهى كود الغسالة 👆👆👆
 
 
 
