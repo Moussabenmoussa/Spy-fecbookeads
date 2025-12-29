@@ -305,117 +305,88 @@ def public_shorten():
 
 
 
+# --- الغسالة الشبح (V9: The Ghost Protocol) ---
+# التقنية: Double Iframe Injection لقتل المصدر 100%
 
-
-# 👇👇👇 استبدل دالة laundry القديمة بهذا البلوك فقط 👇👇👇
-
-# قائمة البوتات (للحماية)
-BOT_USER_AGENTS = [
-    r"facebookexternalhit", r"Facebot", r"Twitterbot", r"LinkedInBot",
-    r"WhatsApp", r"TelegramBot", r"Googlebot", r"AdsBot", r"crawler", 
-    r"curl", r"wget", r"python-requests", r"Mediapartners-Google"
-]
-
-def is_bot(user_agent):
-    if not user_agent: return True
-    for bot in BOT_USER_AGENTS:
-        if re.search(bot, user_agent, re.IGNORECASE):
-            return True
-    return False
-
-# --- الغسالة الماسية (Diamond V7: Engagement Booster) ---
 @app.route('/redirect')
 def laundry():
     url = request.args.get('url')
     user_agent = request.headers.get('User-Agent', '')
 
-    # 1. طرد البوتات فوراً (حماية الحساب)
+    # 1. طرد البوتات
     if is_bot(user_agent):
         return redirect("/", code=302)
 
-    # 2. التحقق من الرابط
-    try:
-        parsed = urlparse(url)
-        if not (parsed.scheme in ["http", "https"] and bool(parsed.netloc)):
-            raise Exception
-    except:
-        return "Invalid Request", 400
+    if not url: return "Error", 400
 
-    # 3. تنظيف وتجهيز الرابط (تحويل المصدر لداخلي + تتبع)
+    # 2. تجهيز الرابط الذهبي
+    # بما أننا سنقتل المصدر 100%، يمكننا الآن استخدام utm_source=google بأمان
+    # لأن الـ Referrer سيصل فارغاً (Direct)، وجوجل سيظن أن الزائر فتح الرابط من الذاكرة
     separator = "&" if "?" in url else "?"
-    final_url = f"{url}{separator}utm_source=portal&utm_medium=premium_entry&utm_campaign=secure_verified"
-    safe_url_html = html.escape(final_url, quote=True)
-
-    # 4. واجهة "التفاعل القسري" (Tap to Continue)
-    # الفكرة: الزائر يلمس الشاشة -> المتصفح يسجل تفاعل حقيقي -> جوجل تثق في الزيارة
+    final_url = f"{url}{separator}utm_source=google&utm_medium=organic&utm_campaign=search_v9"
+    
+    # 3. صفحة الشبح (The Ghost Page)
     html_page = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <meta name="referrer" content="no-referrer">
-        <title>Security Gateway</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Securing...</title>
         <style>
-            body {{ margin: 0; padding: 0; background: #0f172a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
-            /* طبقة شفافة تغطي الشاشة بالكامل لالتقاط أي لمسة */
-            #click-layer {{ position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; background: rgba(0,0,0,0); cursor: pointer; -webkit-tap-highlight-color: transparent; }}
-            .btn {{ background: #3b82f6; padding: 16px 48px; border-radius: 99px; font-weight: 700; font-size: 18px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); transition: transform 0.1s; animation: pulse 2s infinite; pointer-events: none; }}
-            .msg {{ margin-top: 24px; font-size: 13px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8; }}
-            @keyframes pulse {{ 0% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }} 70% {{ transform: scale(1.05); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }} 100% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }} }}
+            body {{ background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; color: #fff; font-family: sans-serif; }}
+            .loader {{ width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }}
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
         </style>
     </head>
     <body>
-        <div class="btn" id="main-btn">Tap to Continue</div>
-        <p class="msg">VERIFYING CONNECTION...</p>
-        
-        <div id="click-layer"></div>
-        <a id="exit-link" href="{safe_url_html}" rel="noreferrer" style="display:none;"></a>
+        <div class="loader"></div>
+        <div style="display:none" id="dest">{final_url}</div>
 
         <script>
-            // A. مصيدة زر الرجوع (تبقي الزائر داخل الموقع)
-            try {{
-                history.pushState(null, null, location.href);
-                window.onpopstate = function () {{
-                    history.pushState(null, null, location.href);
-                }};
-            }} catch(e) {{}}
-
-            // B. تحميل مسبق للصفحة الهدف (لسرعة الفتح)
-            const prefetch = document.createElement('link');
-            prefetch.rel = 'prefetch'; prefetch.href = "{safe_url_html}";
-            document.head.appendChild(prefetch);
-
-            // C. تنفيذ التحويل عند اللمس
-            const layer = document.getElementById('click-layer');
-            const link = document.getElementById('exit-link');
-            let clicked = false;
-
-            function go() {{
-                if(clicked) return; clicked = true;
-                // تأثير بصري
-                document.getElementById('main-btn').style.background = "#10b981";
-                document.getElementById('main-btn').innerText = "VERIFIED";
-                // الانتظار 100 جزء من الثانية ثم النقر
-                setTimeout(() => link.click(), 100);
-            }}
-
-            layer.addEventListener('click', go);
-            layer.addEventListener('touchstart', go);
+            // التقنية المحرمة: Iframe Injection
+            // هذه التقنية تعزل الصفحة الحالية عن الصفحة القادمة تماماً
+            
+            setTimeout(function() {{
+                var dest = document.getElementById('dest').innerText;
+                
+                // إنشاء إطار وهمي
+                var iframe = document.createElement("iframe");
+                iframe.style.display = "none";
+                document.body.appendChild(iframe);
+                
+                // الكتابة داخل الإطار الوهمي (يصبح صفحة جديدة بلا تاريخ)
+                var frameDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                var payload = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta name="referrer" content="no-referrer">
+                    </head>
+                    <body>
+                        <script>
+                            // التحويل من داخل الإطار المعزول
+                            window.parent.location.replace("` + dest + `");
+                        <\/script>
+                    </body>
+                    </html>
+                `;
+                
+                frameDoc.open();
+                frameDoc.write(payload);
+                frameDoc.close();
+                
+            }}, 800); // انتظار بسيط لضمان تحميل الصفحة
         </script>
     </body>
     </html>
     """
-
+    
     response = make_response(html_page)
+    # هيدرات إضافية للتأكد
     response.headers['Referrer-Policy'] = 'no-referrer'
-    # منع الكاش لضمان مرور الزائر على الغسالة كل مرة
-    response.headers['Cache-Control'] = 'no-store, max-age=0'
     return response
-
-# 👆👆👆 انتهى كود الغسالة 👆👆👆
-
-
 
 
 
