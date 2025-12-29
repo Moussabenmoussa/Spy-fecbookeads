@@ -22,13 +22,17 @@ def create_app():
         except Exception as e:
             print(f"❌ Database Connection Error: {e}")
 
-    # 3. تسجيل الموجهات (تمت إضافة لوحة التحكم هنا)
+    # 3. تسجيل الموجهات (Routes Registration)
+    # هنا نربط كل أجزاء المنصة
+    
     from app.routes.public import public_bp
     from app.routes.auth import auth_bp
-    from app.routes.dashboard import dashboard_bp  # <--- هذا هو السطر الجديد
+    from app.routes.dashboard import dashboard_bp
+    from app.routes.admin_content import admin_content_bp  # <--- القسم الجديد
     
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(dashboard_bp)       # <--- وهذا أيضاً لتفعيل اللوحة
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(admin_content_bp)  # <--- تفعيل القسم الجديد
 
     return app
