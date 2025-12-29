@@ -293,20 +293,16 @@ def public_shorten():
         </div>
     """)
     resp.set_cookie('traficoon_limit', today, max_age=86400)
-    return resp
-   ... 
+    return response
+   
 
 
 
-  . 
-
-# --- الغسالة ---
+  
 
 
 
 
-# --- الغسالة الشبح (V9: The Ghost Protocol) ---
-# التقنية: Double Iframe Injection لقتل المصدر 100%
 
 @app.route('/redirect')
 def laundry():
