@@ -24,4 +24,11 @@ def create_app():
     from app.routes.public import public_bp
     app.register_blueprint(public_bp)
 
+    # تسجيل الموجهات (Routes)
+    from app.routes.public import public_bp
+    from app.routes.auth import auth_bp  # <--- هذا سطر جديد
+
+    app.register_blueprint(public_bp)
+    app.register_blueprint(auth_bp)      # <--- هذا سطر جديد
+
     return app
