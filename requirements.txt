@@ -2,3 +2,6 @@ flask
 pymongo
 gunicorn
 requests
+bcrypt
+email-validator
+dnspython
