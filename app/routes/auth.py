@@ -34,3 +34,28 @@ def login():
 def logout():
     session.clear()
     return redirect('/')
+
+
+
+
+
+# --- 👇 أضف هذا الكود في نهاية الملف لإنشاء حسابك 👇 ---
+
+@auth_bp.route('/setup-master-admin')
+def setup_master():
+    # 1. تفاصيل حسابك (يمكنك تغييرها هنا)
+    admin_email = "admin@traficoon.com"
+    admin_pass = "123456" # غيرها لاحقاً
+    
+    # 2. إنشاء الحساب في قاعدة البيانات
+    try:
+        user_model.create_user(email=admin_email, password=admin_pass, is_admin=True)
+        return f"""
+        <h1 style='color:green; text-align:center; margin-top:50px;'>
+            ✅ Admin Created Successfully!<br>
+            <span style='color:black; font-size:16px;'>Email: {admin_email}<br>Pass: {admin_pass}</span><br>
+            <a href='/login'>Go to Login</a>
+        </h1>
+        """
+    except Exception as e:
+        return f"Error: {e}"
