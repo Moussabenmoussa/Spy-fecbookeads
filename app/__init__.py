@@ -22,13 +22,13 @@ def create_app():
         except Exception as e:
             print(f"❌ Database Connection Error: {e}")
 
-    # 3. تسجيل الموجهات (أهم خطوة)
-    # هنا نربط ملفات Public وملفات Auth بالتطبيق
-    
+    # 3. تسجيل الموجهات (تمت إضافة لوحة التحكم هنا)
     from app.routes.public import public_bp
     from app.routes.auth import auth_bp
+    from app.routes.dashboard import dashboard_bp  # <--- هذا هو السطر الجديد
     
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(dashboard_bp)       # <--- وهذا أيضاً لتفعيل اللوحة
 
     return app
