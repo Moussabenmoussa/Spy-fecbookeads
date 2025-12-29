@@ -1,4 +1,4 @@
-import os, re, json, random, requests, datetime, html  # 👈 أضفنا html هنا
+import os, re, json, random, requests, datetime, html 
 from flask import Flask, render_template_string, request, redirect, Response, make_response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
