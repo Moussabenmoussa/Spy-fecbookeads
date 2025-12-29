@@ -41,18 +41,17 @@ HOME_HTML = """
     <nav class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
-       <button onclick="openSidebar()" aria-label="Open Menu" class="md:hidden text-slate-700 p-2 -ml-2 hover:bg-slate-100 rounded-lg transition">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-</button>
+       <div class="flex items-center gap-2">
+    <button onclick="openSidebar()" aria-label="Open Menu" class="md:hidden text-slate-700 p-2 -ml-2 hover:bg-slate-100 rounded-lg transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+    <a href="/" class="flex items-center gap-2 group">
+        <img src="https://b.top4top.io/p_3649zxju10.png" alt="TRAFICOON" class="h-8 w-auto object-contain transition group-hover:scale-105">
+        <span class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
+    </a>
+</div>
 
-
-        
-            <a href="/" class="flex items-center gap-3 group">
-                <img src="https://b.top4top.io/p_3649zxju10.png" alt="TRAFICOON" class="h-9 w-auto object-contain transition group-hover:scale-105">
-                
-                <span class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
-                
-            </a>
+            
             <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
                 <a href="/" class="hover:text-blue-600 transition">Latest</a>
                 {% for niche in niches %}
