@@ -4,7 +4,7 @@ from app.models import User
 auth_bp = Blueprint('auth', __name__)
 user_model = User()
 
-# --- تسجيل الدخول ---
+# --- 1. تسجيل الدخول ---
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -17,46 +17,37 @@ def login():
             session['user_email'] = user['email']
             session['plan'] = user.get('plan', 'free')
             session['is_admin'] = user.get('is_admin', False)
+            # إذا كان أدمن يذهب للوحة، وإلا للمستخدم
             return redirect('/dashboard')
         
         return render_template('auth/login.html', error="Invalid email or password")
     
     return render_template('auth/login.html')
 
-# --- 🔥 تسجيل حساب جديد (الجديد) 🔥 ---
+# --- 2. 🔥 تسجيل حساب جديد (هذا هو الكود الناقص) 🔥 ---
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    # عند الضغط على زر "Create Account"
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         
-        # 1. التحقق من صحة البيانات (بسيط)
         if not email or not password:
-            return render_template('auth/register.html', error="Please fill all fields")
+            return render_template('auth/register.html', error="All fields required")
 
-        # 2. محاولة إنشاء المستخدم
-        # ملاحظة: create_user في models.py تقوم تلقائياً بجعله 'free' و 'is_admin=False'
-        result = user_model.create_user(email, password)
-        
-        if result:
-            # نجاح التسجيل -> توجيه لصفحة الدخول
+        # محاولة إنشاء المستخدم
+        if user_model.create_user(email, password):
+            # نجح -> اذهب للدخول
             return redirect('/login')
         else:
-            # فشل (غالباً الإيميل مكرر)
+            # فشل -> الإيميل موجود مسبقاً
             return render_template('auth/register.html', error="Email already exists!")
 
+    # عند فتح الصفحة
     return render_template('auth/register.html')
 
-# --- تسجيل الخروج ---
+# --- 3. الخروج ---
 @auth_bp.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
-
-# رابط الطوارئ للأدمن (احتفظ به للطوارئ أو احذفه إذا انتهيت)
-@auth_bp.route('/setup-master-admin')
-def setup_master():
-    try:
-        user_model.create_user(email="admin@traficoon.com", password="123456", is_admin=True)
-        return "Admin Created."
-    except: return "Error."
