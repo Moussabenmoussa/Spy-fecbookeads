@@ -75,3 +75,42 @@ def settings():
     current_url = setting.get('stuffing_url', '') if setting else ''
     
     return render_template('dashboard/settings.html', current_url=current_url)
+
+
+# ... (الكود السابق) ...
+
+# 3. عرض صفحة الإحصائيات الشاملة
+@dashboard_bp.route('/stats/<link_id>')
+@login_required
+def link_stats(link_id):
+    from bson.objectid import ObjectId
+    
+    # جلب الرابط
+    link = db.links.find_one({"_id": ObjectId(link_id), "owner": session['user_email']})
+    if not link: return redirect('/dashboard')
+    
+    # 1. إحصائيات البوتات (Security Shield)
+    blocked_count = db.blocked_logs.count_documents({"link_id": ObjectId(link_id)})
+    
+    # تجميع أنواع البوتات (للرسم البياني)
+    bots_pipeline = [
+        {"$match": {"link_id": ObjectId(link_id)}},
+        {"$group": {"_id": "$bot_name", "count": {"$sum": 1}}}
+    ]
+    bots_data = list(db.blocked_logs.aggregate(bots_pipeline))
+    
+    # 2. إحصائيات البشر (Traffic Quality)
+    human_count = link.get('clicks', 0)
+    
+    # تجميع أنظمة التشغيل (OS)
+    os_pipeline = [
+        {"$match": {"link_id": ObjectId(link_id)}},
+        {"$group": {"_id": "$os", "count": {"$sum": 1}}}
+    ]
+    os_data = list(db.visits.aggregate(os_pipeline))
+    
+    return render_template('dashboard/stats.html', 
+                           link=link, 
+                           blocked_count=blocked_count,
+                           bots_data=bots_data,
+                           os_data=os_data)
