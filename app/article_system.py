@@ -5,73 +5,74 @@ import random
 
 class ArticleManager:
     def __init__(self):
-        # الاتصال بجدول المقالات
-        self.collection = db.articles
+        self.articles = db.articles
+        self.categories = db.categories  # جدول جديد للأقسام
 
-    # --- 1. الخوارزمية الذكية لتحسين الصور (Auto-WebP) ---
+    # --- 1. معالجة الصور ---
     def optimize_content_images(self, html_content):
-        """
-        هذه الدالة تبحث عن أي صورة داخل كود HTML
-        وتقوم بتغليفها بخدمة CDN لتحويلها إلى WebP وسريع التحميل.
-        """
         if not html_content: return ""
-        
-        # البحث عن روابط الصور src="..."
-        # واستبدالها برابط المعالجة السحابية
         pattern = r'src="(https?://[^"]+)"'
-        # نستخدم خدمة images.weserv.nl المجانية والموثوقة عالمياً للتحويل
         replacement = r'src="https://images.weserv.nl/?url=\1&w=800&output=webp&q=80"'
-        
-        optimized_html = re.sub(pattern, replacement, html_content)
-        return optimized_html
+        return re.sub(pattern, replacement, html_content)
 
-    # --- 2. إضافة مقال جديد ---
+    # --- 2. إدارة المقالات ---
     def add_article(self, title, category, html_body, featured_image):
-        # أ. تحسين الصور داخل النص تلقائياً
         clean_body = self.optimize_content_images(html_body)
-        
-        # ب. تجهيز البيانات
         article_data = {
             "title": title,
-            "category": category.upper().strip(), # توحيد الأقسام بحروف كبيرة
+            "category": category.upper().strip(),
             "body": clean_body,
-            "image": featured_image, # الصورة البارزة
+            "image": featured_image,
             "created_at": datetime.utcnow(),
             "views": 0
         }
-        
-        # ج. الحفظ في القاعدة
-        return self.collection.insert_one(article_data)
+        return self.articles.insert_one(article_data)
 
-    # --- 3. جلب مقال ذكي (حسب القسم) ---
     def get_article_for_visitor(self, category):
-        """
-        تختار مقالاً عشوائياً من نفس القسم الذي طلبه الزائر.
-        إذا لم تجد، تأتي بمقال عام (General).
-        """
-        # محاولة العثور على مقال في نفس القسم
-        pipeline = [
-            {"$match": {"category": category.upper()}},
-            {"$sample": {"size": 1}} # اختيار عشوائي لتبدو المجلة متجددة
-        ]
-        result = list(self.collection.aggregate(pipeline))
-        
-        if result:
-            return result[0]
-            
-        # خطة بديلة: إذا لم نجد مقالاً في هذا القسم، هات أي مقال
-        fallback = list(self.collection.aggregate([{"$sample": {"size": 1}}]))
+        pipeline = [{"$match": {"category": category.upper()}}, {"$sample": {"size": 1}}]
+        result = list(self.articles.aggregate(pipeline))
+        if result: return result[0]
+        fallback = list(self.articles.aggregate([{"$sample": {"size": 1}}]))
         return fallback[0] if fallback else None
 
-    # --- 4. جلب كل المقالات (للأدمن) ---
     def get_all_articles(self):
-        return list(self.collection.find().sort("created_at", -1))
+        return list(self.articles.find().sort("created_at", -1))
 
-    # --- 5. حذف مقال ---
     def delete_article(self, article_id):
         from bson.objectid import ObjectId
         try:
-            self.collection.delete_one({"_id": ObjectId(article_id)})
+            self.articles.delete_one({"_id": ObjectId(article_id)})
             return True
-        except:
-            return False
+        except: return False
+
+    # --- 🔥 3. إدارة الأقسام (الجديد) 🔥 ---
+    
+    def add_category(self, name):
+        """إضافة قسم جديد للقاعدة"""
+        slug = name.strip().lower().replace(' ', '-')
+        # التأكد من عدم التكرار
+        if not self.categories.find_one({"slug": slug}):
+            self.categories.insert_one({
+                "name": name.strip(),
+                "slug": slug,
+                "created_at": datetime.utcnow()
+            })
+            return True
+        return False
+
+    def get_all_categories(self):
+        """جلب كل الأقسام"""
+        cats = list(self.categories.find().sort("name", 1))
+        # إذا كانت القائمة فارغة (أول مرة)، نضع أقسام افتراضية
+        if not cats:
+            default_cats = ["General News", "Finance", "Technology", "Health", "Crypto"]
+            for c in default_cats: self.add_category(c)
+            cats = list(self.categories.find().sort("name", 1))
+        return cats
+
+    def delete_category(self, cat_id):
+        from bson.objectid import ObjectId
+        try:
+            self.categories.delete_one({"_id": ObjectId(cat_id)})
+            return True
+        except: return False
