@@ -20,30 +20,38 @@ def get_laundry_html(target_url):
     </html>
     '''
 
-# --- 2. نظام الذكاء (تحليل الزائر) ---
+# --- 2. دالة كشف البوتات (هذه التي كانت ناقصة وسببت الخطأ) ---
+def is_bot(user_agent_string):
+    """
+    فحص بسيط وسريع: هل هذا بوت أم بشر؟
+    """
+    if not user_agent_string: return True
+    ua = parse(user_agent_string)
+    return ua.is_bot
+
+# --- 3. نظام الذكاء والتحليل (لصفحة الإحصائيات) ---
 def analyze_visitor(user_agent_string):
     """
-    تقوم هذه الدالة بتحليل بصمة الزائر وإرجاع تقرير كامل:
-    - هل هو بوت؟ وما اسمه؟
-    - نوع الجهاز (Mobile/PC)
-    - نظام التشغيل (Android/iOS)
+    تقرير كامل عن الزائر
     """
+    if not user_agent_string:
+        return {
+            "is_bot": True, "bot_name": "Unknown",
+            "browser": "Unknown", "os": "Unknown", "device": "Unknown"
+        }
+
     ua = parse(user_agent_string)
     
-    # أ. كشف البوتات بدقة
+    # كشف اسم البوت
     bot_name = None
     if ua.is_bot:
-        # محاولة معرفة اسم البوت الشهير
         ua_str = user_agent_string.lower()
         if 'facebook' in ua_str: bot_name = 'Facebook Bot'
         elif 'tiktok' in ua_str: bot_name = 'TikTok Bot'
         elif 'google' in ua_str: bot_name = 'Google Bot'
-        elif 'twitter' in ua_str: bot_name = 'Twitter Bot'
-        elif 'telegram' in ua_str: bot_name = 'Telegram Bot'
-        elif 'whatsapp' in ua_str: bot_name = 'WhatsApp Bot'
         else: bot_name = 'Generic Bot'
     
-    # ب. كشف الجهاز
+    # كشف الجهاز
     device_type = "Desktop"
     if ua.is_mobile: device_type = "Mobile"
     elif ua.is_tablet: device_type = "Tablet"
@@ -52,6 +60,6 @@ def analyze_visitor(user_agent_string):
         "is_bot": ua.is_bot,
         "bot_name": bot_name,
         "browser": ua.browser.family,
-        "os": ua.os.family, # Android, iOS, Windows
+        "os": ua.os.family,
         "device": device_type
     }
