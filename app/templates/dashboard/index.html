@@ -10,51 +10,29 @@
 </head>
 <body class="text-slate-800">
 
-    <!-- Top Bar (Mobile Optimized) -->
+    <!-- Top Bar -->
     <nav class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-50">
-        <!-- Logo -->
         <div class="flex items-center">
             <span class="font-black text-lg md:text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
         </div>
 
-        <!-- Actions -->
         <div class="flex items-center gap-2 md:gap-4">
-            
-            <!-- 🔥 أزرار الأدمن 🔥 -->
             {% if session.get('is_admin') %}
-            
-            <a href="/admin/articles" class="bg-slate-900 text-white p-2 md:px-3 md:py-1.5 rounded-lg hover:bg-slate-700 transition flex items-center gap-1" title="Manage Articles">
-                <span>📝</span>
-                <span class="hidden md:inline text-xs font-bold">Articles</span>
+            <a href="/admin/articles" class="bg-slate-900 text-white p-2 md:px-3 md:py-1.5 rounded-lg hover:bg-slate-700 transition flex items-center gap-1">
+                <span>📝</span><span class="hidden md:inline text-xs font-bold">Articles</span>
             </a>
-            
-            <a href="/dashboard/settings" class="text-slate-600 hover:text-blue-600 p-1" title="Global Settings">
-                <span class="text-xl md:text-base">⚙️</span>
-                <span class="hidden md:inline text-xs font-bold">Settings</span>
+            <a href="/dashboard/settings" class="text-slate-600 hover:text-blue-600 p-1">
+                <span class="text-xl md:text-base">⚙️</span><span class="hidden md:inline text-xs font-bold">Settings</span>
             </a>
-            
             {% endif %}
-
-            <!-- Plan Badge -->
             <span class="hidden sm:inline-block text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100 uppercase">{{ user.plan }}</span>
-            
-            <!-- Logout -->
-            <a href="/logout" class="text-xs md:text-sm font-medium text-red-500 hover:text-red-700">
-                <span class="md:hidden">Exit</span>
-                <span class="hidden md:inline">Logout</span>
-            </a>
+            <a href="/logout" class="text-xs md:text-sm font-medium text-red-500 hover:text-red-700">Logout</a>
         </div>
     </nav>
 
     <div class="max-w-6xl mx-auto px-4 py-8">
         
-        <!-- Welcome Section -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-slate-900">Overview</h1>
-            <p class="text-slate-500 text-sm">Manage your secure links and traffic attribution.</p>
-        </div>
-
-        <!-- Create Link Card -->
+        <!-- Create Link -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-10">
             <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -62,25 +40,20 @@
             </h2>
             
             <form action="/dashboard" method="POST" class="space-y-4">
-                
-                <!-- URL Input -->
                 <input type="url" name="target_url" required placeholder="Paste Target URL (AdSense Page)" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-blue-500 outline-none">
-                
-                <!-- Title Input -->
                 <input type="text" name="title" required placeholder="Article Title (for Facebook)" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:border-blue-500 outline-none">
                 
-                <!-- Category Select -->
                 <select name="category" class="w-full p-3 border border-slate-200 rounded-lg text-sm bg-white focus:border-blue-500 outline-none">
                     {% for cat in categories %}
                     <option value="{{ cat.slug }}">{{ cat.name }}</option>
+                    {% else %}
+                    <option value="general">General (Default)</option>
                     {% endfor %}
                 </select>
                 
-                <!-- 🔥 زر الإنشاء 🔥 -->
                 <button class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold text-sm hover:bg-slate-800 transition shadow-lg">
                     Generate Secure Link 🚀
                 </button>
-
             </form>
         </div>
 
@@ -92,7 +65,7 @@
             <table class="w-full text-left text-sm">
                 <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
                     <tr>
-                        <th class="p-4">Campaign Title</th>
+                        <th class="p-4">Title</th>
                         <th class="p-4">Secure Link</th>
                         <th class="p-4">Clicks</th>
                         <th class="p-4 text-right">Actions</th>
@@ -100,21 +73,20 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for link in links %}
+                    <!-- هنا التصحيح: نستخدم (link.category or 'general') لمنع الخطأ -->
+                    {% set cat_display = (link.category or 'general') | upper %}
+                    
                     <tr class="hover:bg-slate-50 transition">
                         <td class="p-4 font-medium text-slate-900">{{ link.title }}</td>
                         <td class="p-4">
-                            <a href="/{{ link.category.upper() }}/{{ link.slug }}" target="_blank" class="text-blue-600 hover:underline font-mono text-xs truncate max-w-[200px] block">
-                                /{{ link.category.upper() }}/{{ link.slug }}
+                            <a href="/{{ cat_display }}/{{ link.slug }}" target="_blank" class="text-blue-600 hover:underline font-mono text-xs truncate max-w-[200px] block">
+                                /{{ cat_display }}/{{ link.slug }}
                             </a>
                         </td>
                         <td class="p-4 font-bold text-slate-700">{{ link.clicks }}</td>
-                        
-                        <!-- 🔥 أزرار الإجراءات (كمبيوتر) 🔥 -->
                         <td class="p-4 text-right flex justify-end items-center gap-3">
-                            <a href="/stats/{{ link._id }}" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                                📊 Analytics
-                            </a>
-                            <a href="/link/delete/{{ link._id }}" class="text-red-500 hover:text-red-700 text-xs font-bold uppercase" onclick="return confirm('Delete this link?')">Delete</a>
+                            <a href="/stats/{{ link._id }}" class="text-blue-600 text-xs font-bold bg-blue-50 px-2 py-1 rounded">📊 Analytics</a>
+                            <a href="/link/delete/{{ link._id }}" class="text-red-500 text-xs font-bold uppercase" onclick="return confirm('Delete?')">Delete</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -125,29 +97,22 @@
         <!-- Mobile Cards -->
         <div class="md:hidden space-y-4">
             {% for link in links %}
+            {% set cat_display = (link.category or 'general') | upper %}
+            
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex justify-between items-start mb-2">
                     <h4 class="font-bold text-slate-900 text-sm">{{ link.title }}</h4>
-                    <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded font-bold">{{ link.clicks }} Clicks</span>
+                    <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded font-bold">{{ link.clicks }}</span>
                 </div>
-                
-                <!-- الرابط -->
                 <div class="bg-slate-50 p-3 rounded border border-slate-100 mb-3">
                     <div class="text-[10px] font-mono text-blue-600 break-all">
-                        /{{ link.category.upper() }}/{{ link.slug }}
+                        /{{ cat_display }}/{{ link.slug }}
                     </div>
                 </div>
-
-                <!-- 🔥 أزرار الإجراءات (موبايل) 🔥 -->
                 <div class="flex justify-between items-center mt-2 border-t border-slate-50 pt-2">
-                    <a href="/{{ link.category.upper() }}/{{ link.slug }}" target="_blank" class="text-slate-600 text-xs font-bold hover:text-blue-600 flex items-center gap-1">
-                        Test ↗
-                    </a>
-                    
+                    <a href="/{{ cat_display }}/{{ link.slug }}" target="_blank" class="text-slate-600 text-xs font-bold">Test ↗</a>
                     <div class="flex items-center gap-3">
-                        <a href="/stats/{{ link._id }}" class="text-blue-600 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                            📊 Stats
-                        </a>
+                        <a href="/stats/{{ link._id }}" class="text-blue-600 text-xs font-bold bg-blue-50 px-2 py-1 rounded">📊 Stats</a>
                         <a href="/link/delete/{{ link._id }}" class="text-red-500 text-xs font-bold" onclick="return confirm('Delete?')">Delete</a>
                     </div>
                 </div>
