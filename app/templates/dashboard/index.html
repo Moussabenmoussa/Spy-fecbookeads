@@ -14,27 +14,41 @@
 
 
 
-
-<!-- Top Bar -->
-    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-2">
-            <span class="font-black text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
+<!-- Top Bar (Mobile Optimized) -->
+    <nav class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-50">
+        <!-- Logo -->
+        <div class="flex items-center">
+            <span class="font-black text-lg md:text-xl tracking-tighter text-slate-900">TRAFICOON<span class="text-blue-600">.</span></span>
         </div>
-        <div class="flex items-center gap-4">
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 md:gap-4">
             
-            <!-- 🔥 زر خاص يظهر للسوبر أدمن فقط 🔥 -->
+            <!-- 🔥 أزرار الأدمن (تظهر للكل الآن) 🔥 -->
             {% if session.get('is_admin') %}
-            <a href="/admin/articles" class="hidden md:inline-block text-xs font-bold bg-slate-900 text-white px-3 py-1.5 rounded hover:bg-slate-700 transition">
-                Manage Articles 📝
+            
+            <!-- زر المقالات (أيقونة في الموبايل / نص في الكمبيوتر) -->
+            <a href="/admin/articles" class="bg-slate-900 text-white p-2 md:px-3 md:py-1.5 rounded-lg hover:bg-slate-700 transition flex items-center gap-1" title="Manage Articles">
+                <span>📝</span>
+                <span class="hidden md:inline text-xs font-bold">Articles</span>
             </a>
-            <!-- زر إعدادات الكوكيز -->
-            <a href="/dashboard/settings" class="hidden md:inline-block text-xs font-bold text-slate-600 hover:text-blue-600">
-                Settings ⚙️
+            
+            <!-- زر الإعدادات -->
+            <a href="/dashboard/settings" class="text-slate-600 hover:text-blue-600 p-1" title="Global Settings">
+                <span class="text-xl md:text-base">⚙️</span> <!-- أيقونة كبيرة للموبايل -->
+                <span class="hidden md:inline text-xs font-bold">Settings</span>
             </a>
+            
             {% endif %}
 
-            <span class="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100 uppercase">{{ user.plan }} Plan</span>
-            <a href="/logout" class="text-sm font-medium text-slate-500 hover:text-red-600">Logout</a>
+            <!-- Plan Badge (يختفي في الشاشات الصغيرة جداً لتوفير مساحة) -->
+            <span class="hidden sm:inline-block text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100 uppercase">{{ user.plan }}</span>
+            
+            <!-- Logout -->
+            <a href="/logout" class="text-xs md:text-sm font-medium text-red-500 hover:text-red-700">
+                <span class="md:hidden">Exit</span> <!-- كلمة قصيرة للموبايل -->
+                <span class="hidden md:inline">Logout</span>
+            </a>
         </div>
     </nav>
 
