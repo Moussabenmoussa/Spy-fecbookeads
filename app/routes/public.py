@@ -22,45 +22,68 @@ def home():
     return render_template('home_corporate.html')
 
 # 2. صفحة عرض المقال (المجلة)
+# ... (استيراد المكتبات في الأعلى كما هي) ...
+# تأكد من استيراد analyze_visitor من helpers
+from app.utils.helpers import get_laundry_html, analyze_visitor 
+
+# ... (كود home كما هو) ...
+
+# 2. صفحة عرض المقال (مع نظام التسجيل الجديد)
 @public_bp.route('/<category>/<slug>')
 def article_view(category, slug):
     try:
         db = get_db()
-        
-        # التأكد من سلامة الاتصال
-        if db is None: 
-            return "System Maintenance: Database Connection Pending", 500
+        if db is None: return "Maintenance", 500
 
-        # أ. البحث عن الرابط
         link = db.links.find_one({"slug": slug})
+        if not link: return "404", 404
+
+        # --- 🔥 بداية التحليل والتسجيل 🔥 ---
+        ua_string = request.headers.get('User-Agent', '')
+        visitor_data = analyze_visitor(ua_string)
         
-        # ب. إذا الرابط غير موجود
-        if link is None:
-            return "404 - Link Not Found", 404
+        # الحالة 1: الزائر بوت (تهديد)
+        if visitor_data['is_bot']:
+            # تسجيل البوت في سجل الحماية (ليراه العميل)
+            db.blocked_logs.insert_one({
+                "link_id": link['_id'],
+                "owner": link['owner'],
+                "bot_name": visitor_data['bot_name'],
+                "timestamp": datetime.utcnow()
+            })
+            # عرض صفحة التمويه
+            return f"<h1>News: {link.get('title')}</h1><p>Loading secure content...</p>"
 
-        # ج. كشف البوتات (حماية من الحظر)
-        user_agent = request.headers.get('User-Agent', '')
-        if is_bot(user_agent):
-            return f"<h1>News: {link.get('title', 'Article')}</h1><p>Loading...</p>"
+        # الحالة 2: الزائر إنسان (ترافيك)
+        # تسجيل الزيارة في سجل التحليلات
+        db.visits.insert_one({
+            "link_id": link['_id'],
+            "owner": link['owner'],
+            "os": visitor_data['os'],       # Android/iOS
+            "device": visitor_data['device'], # Mobile/Desktop
+            "browser": visitor_data['browser'],
+            "timestamp": datetime.utcnow()
+        })
+        
+        # زيادة عداد النقرات العام (للسرعة)
+        db.links.update_one({"_id": link['_id']}, {"$inc": {"clicks": 1}})
 
-        # د. جلب إعدادات الكوكيز (الخاصة بالأدمن)
+        # --- نهاية التسجيل ---
+
+        # جلب الكوكيز وعرض المجلة (كما كان سابقاً)
         settings = db.settings.find_one({"type": "global"})
-        if settings is None:
-            cookie_url = ""
-        else:
-            cookie_url = settings.get('stuffing_url', '')
+        cookie_url = settings.get('stuffing_url', '') if settings else ''
 
-        # هـ. عرض المجلة (مع تمرير الرابط الأصلي للزر)
         return render_template(
             'article_magazine.html',
-            title=link.get('title', 'Breaking News'),
+            title=link.get('title', 'News'),
             category=category.upper(),
             date=datetime.utcnow().strftime('%B %d, %Y'),
             target_url=link.get('target_url', '#'),
             cookie_url=cookie_url
         )
     except Exception as e:
-        return f"App Error: {str(e)}", 500
+        return f"Error: {e}", 500
 
 # 3. الغسالة (الوضع الشبح - Invisible Mode)
 @public_bp.route('/redirect')
