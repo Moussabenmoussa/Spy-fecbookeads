@@ -15,9 +15,9 @@
             <p class="text-slate-500 text-sm mt-1">Join the elite traffic arbitrage platform.</p>
         </div>
         
-        <!-- إظهار رسائل الخطأ إن وجدت -->
+        <!-- مكان ظهور الأخطاء -->
         {% if error %}
-        <div class="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 text-center font-bold">
+        <div class="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 text-center font-bold border border-red-100">
             {{ error }}
         </div>
         {% endif %}
@@ -25,10 +25,10 @@
         <form action="/register" method="POST" class="space-y-5">
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Email Address</label>
-                <input type="email" name="email" required placeholder="you@company.com" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="email" name="email" required placeholder="name@company.com" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Choose Password</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Password</label>
                 <input type="password" name="password" required placeholder="••••••••" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
             
