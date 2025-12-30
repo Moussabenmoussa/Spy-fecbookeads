@@ -76,7 +76,7 @@
                     {% endfor %}
                 </select>
                 
-                <!-- 🔥 الزر المفقود (تمت إعادته) 🔥 -->
+                <!-- 🔥 زر الإنشاء 🔥 -->
                 <button class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold text-sm hover:bg-slate-800 transition shadow-lg">
                     Generate Secure Link 🚀
                 </button>
@@ -108,7 +108,12 @@
                             </a>
                         </td>
                         <td class="p-4 font-bold text-slate-700">{{ link.clicks }}</td>
-                        <td class="p-4 text-right">
+                        
+                        <!-- 🔥 أزرار الإجراءات (كمبيوتر) 🔥 -->
+                        <td class="p-4 text-right flex justify-end items-center gap-3">
+                            <a href="/stats/{{ link._id }}" class="text-blue-600 hover:text-blue-800 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                                📊 Analytics
+                            </a>
                             <a href="/link/delete/{{ link._id }}" class="text-red-500 hover:text-red-700 text-xs font-bold uppercase" onclick="return confirm('Delete this link?')">Delete</a>
                         </td>
                     </tr>
@@ -126,18 +131,25 @@
                     <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded font-bold">{{ link.clicks }} Clicks</span>
                 </div>
                 
-                <!-- الرابط مع زر التجربة -->
+                <!-- الرابط -->
                 <div class="bg-slate-50 p-3 rounded border border-slate-100 mb-3">
                     <div class="text-[10px] font-mono text-blue-600 break-all">
                         /{{ link.category.upper() }}/{{ link.slug }}
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mt-2">
+                <!-- 🔥 أزرار الإجراءات (موبايل) 🔥 -->
+                <div class="flex justify-between items-center mt-2 border-t border-slate-50 pt-2">
                     <a href="/{{ link.category.upper() }}/{{ link.slug }}" target="_blank" class="text-slate-600 text-xs font-bold hover:text-blue-600 flex items-center gap-1">
-                        Test Link <span>→</span>
+                        Test ↗
                     </a>
-                    <a href="/link/delete/{{ link._id }}" class="text-red-500 text-xs font-bold" onclick="return confirm('Delete?')">Delete</a>
+                    
+                    <div class="flex items-center gap-3">
+                        <a href="/stats/{{ link._id }}" class="text-blue-600 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                            📊 Stats
+                        </a>
+                        <a href="/link/delete/{{ link._id }}" class="text-red-500 text-xs font-bold" onclick="return confirm('Delete?')">Delete</a>
+                    </div>
                 </div>
             </div>
             {% endfor %}
