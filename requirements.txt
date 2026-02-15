@@ -1,8 +1,5 @@
-flask
-pymongo
-gunicorn
-requests
-bcrypt
-email-validator
-dnspython
-user-agents
+fastapi
+uvicorn 
+jinja2
+pydantic 
+groq
