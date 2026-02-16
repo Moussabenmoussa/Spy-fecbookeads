@@ -3,70 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} | Setup Guide</title>
-    <meta name="description" content="Learn how to watch 4K IPTV on {{ device.name }} in {{ country.name }}. Best app recommendations and setup guide for {{ country.name }} residents.">
+    <title>{{ title }}</title>
+    <meta name="description" content="Ultimate guide: Setup 4K IPTV on {{ device.name }} in {{ country.name }}. Best settings, app recommendations, and anti-freeze tips.">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="bg-gray-50 text-slate-800">
 
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 py-6">
-        <div class="max-w-3xl mx-auto px-4">
-            <p class="text-blue-600 text-sm font-bold uppercase tracking-wide">Installation Guide 2026</p>
-            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">{{ title }}</h1>
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-gray-200 py-4">
+        <div class="max-w-4xl mx-auto px-6 flex justify-between items-center">
+            <a href="/" class="font-bold text-xl text-blue-700">StreamGuides</a>
+            <a href="{{ main_store_url }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition">Get Premium Subscription</a>
         </div>
-    </header>
+    </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-3xl mx-auto px-4 py-10">
+    <main class="max-w-3xl mx-auto px-6 py-12">
         
-        <!-- Intro -->
-        <div class="prose prose-lg text-gray-600 mb-10">
-            <p>
-                If you are living in <strong>{{ country.name }}</strong> and own a <strong>{{ device.name }}</strong>, finding a stable IPTV service can be challenging. 
-                Many providers buffer or get blocked by local ISPs in {{ country.name }}.
-            </p>
-            <p>
-                In this guide, we will show you exactly how to set up the best streaming experience on your {{ device.name }} using the <strong>{{ device.app }}</strong> application.
+        <!-- Breadcrumb -->
+        <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">
+            <a href="/" class="hover:underline">Home</a> / {{ country.name }} / {{ device.name }}
+        </p>
+
+        <!-- H1 -->
+        <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-8 leading-tight">{{ title }}</h1>
+
+        <!-- AI Generated Unique Content -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-10 prose prose-lg text-gray-600">
+            <p class="italic border-l-4 border-blue-500 pl-4 bg-blue-50 py-2 pr-2 rounded-r">
+                {{ ai_intro }}
             </p>
         </div>
 
-        <!-- Country Tip Box -->
-        <div class="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-r-lg mb-10">
-            <h3 class="font-bold text-blue-900 text-lg mb-2">💡 Note for {{ country.name }} Viewers:</h3>
-            <p class="text-blue-800">{{ country.tip }}</p>
-        </div>
-
-        <!-- Setup Guide -->
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">How to Setup on {{ device.name }}</h2>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-10">
+        <!-- Technical Guide -->
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Setup Instructions</h2>
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 mb-10">
+            <p class="mb-4">Follow these specific steps for <strong>{{ device.name }}</strong> users in <strong>{{ country.name }}</strong>:</p>
             <ol class="list-decimal list-inside space-y-4 text-gray-700">
-                <li>Turn on your <strong>{{ device.name }}</strong> and connect to the internet.</li>
+                <li>Ensure your <strong>{{ device.name }}</strong> is connected to a stable internet (Ethernet recommended).</li>
                 <li>Go to the <strong>{{ device.install_method }}</strong>.</li>
-                <li>Search for and install <strong>{{ device.app }}</strong>.</li>
-                <li>Open the app. You will need a playlist URL or Login details.</li>
-                <li><strong>{{ device.guide }}</strong></li>
+                <li>Download <strong>{{ device.app }}</strong> (Recommended for {{ device.os }}).</li>
+                <li><strong>Pro Tip for {{ country.name }}:</strong> {{ country.tip }}</li>
+                <li>{{ device.guide }}</li>
             </ol>
         </div>
 
-        <!-- CTA (The Money Maker) -->
-        <div class="bg-gray-900 text-white p-8 rounded-2xl text-center shadow-2xl relative overflow-hidden">
-            <div class="relative z-10">
-                <h3 class="text-2xl font-bold mb-3">Need a Premium {{ device.name }} Subscription?</h3>
-                <p class="text-gray-400 mb-6">Get 12,000+ Channels & VOD in 4K. Optimized for {{ country.name }} servers.</p>
-                <a href="{{ main_store_url }}" class="inline-block bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition transform hover:-translate-y-1 shadow-lg">
-                    Get Free 24H Trial
-                </a>
-                <p class="text-xs text-gray-500 mt-4">No credit card required · Instant Activation</p>
+        <!-- Device Pros -->
+        <div class="grid md:grid-cols-2 gap-6 mb-12">
+            <div class="bg-green-50 p-6 rounded-xl border border-green-100">
+                <h3 class="font-bold text-green-800 mb-2">Why {{ device.name }}?</h3>
+                <p class="text-sm text-green-700">{{ device.pros }}</p>
             </div>
-            <!-- Decorative circle -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="font-bold text-blue-800 mb-2">Why Our Server?</h3>
+                <p class="text-sm text-blue-700">Optimized routing for {{ country.name }} ISPs to ensure 0% buffering.</p>
+            </div>
+        </div>
+
+        <!-- CTA (Funnel to Main Store) -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-3xl font-bold mb-4">Ready to watch in 4K?</h3>
+                <p class="text-gray-300 mb-8 max-w-md mx-auto">Don't settle for buffering. Get the premium feed designed for your {{ device.name }}.</p>
+                <a href="{{ main_store_url }}" class="inline-block bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-bold text-lg transition transform hover:-translate-y-1 shadow-lg">
+                    Start Free Trial Now
+                </a>
+            </div>
         </div>
 
     </main>
 
-    <footer class="text-center py-10 text-gray-400 text-sm">
-        &copy; 2026 Streaming Guides. All rights reserved.
+    <footer class="bg-gray-50 border-t border-gray-200 mt-12 py-12 text-center text-gray-400 text-sm">
+        <p>&copy; 2026 Streaming Guides. Optimized for {{ device.name }}.</p>
     </footer>
 
 </body>
