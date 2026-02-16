@@ -2,36 +2,44 @@ import os
 from pymongo import MongoClient
 from datetime import datetime
 
-# إعدادات الاتصال بالسحابة
 MONGO_URI = os.getenv("MONGO_URI", "")
 client = MongoClient(MONGO_URI)
-db = client.get_database("auratools_production")
+db = client.get_database("auratools_v2_enterprise")
 
-# مجموعات البيانات (Collections)
-tools_registry = db["tools_registry"] # تخزين محتوى الـ SEO لكل أداة
-usage_logs = db["usage_logs"]         # تسجيل إحصائيات الاستخدام للقبول في أدسنس
+# المجموعات
+tools_col = db["tools"]          # بيانات الأدوات ومحتواها
+settings_col = db["settings"]    # إعدادات الموقع (ADSENSE, GSC, META)
+usage_col = db["analytics"]      # الإحصائيات
 
-# إعدادات المنصة (Constants)
-PLATFORM_SETTINGS = {
-    "brand_name": os.getenv("SITE_NAME", "AuraTools Pro"),
-    "base_domain": os.getenv("SITE_DOMAIN", "auratools.onrender.com"),
-    "adsense_pub_id": os.getenv("ADSENSE_ID", ""),
-    "verify_tag": os.getenv("VERIFY_TAG", ""), # كود التحقق من جوجل
-    "admin_user": os.getenv("ADMIN_USER", "admin"),
-    "admin_pass": os.getenv("ADMIN_PASS", "Aura2024Pass!")
+# الإعدادات الافتراضية (Fallback)
+DEFAULT_CONFIG = {
+    "site_name": "AuraTools Pro",
+    "site_description": "Premium Web Utilities",
+    "contact_email": "admin@example.com",
+    "adsense_code": "",  # كود الإعلان
+    "head_code": "",     # كود التحقق والأناليتكس
+    "footer_text": "All rights reserved."
 }
 
-def record_interaction(tool_key: str):
-    """
-    تسجيل التفاعل البرمجي. 
-    جوجل تراقب هذه الإحصائيات لتقييم مدى فائدة الموقع (Utility Score).
-    """
-    usage_logs.update_one(
-        {"tool_id": tool_key},
-        {"$inc": {"total_uses": 1}, "$set": {"last_active": datetime.utcnow()}},
+def get_config():
+    """جلب إعدادات الموقع الحالية من القاعدة، أو إنشاء الافتراضية"""
+    conf = settings_col.find_one({"_id": "global_config"})
+    if not conf:
+        settings_col.insert_one({"_id": "global_config", **DEFAULT_CONFIG})
+        return DEFAULT_CONFIG
+    return conf
+
+def update_config(new_data: dict):
+    """تحديث إعدادات الموقع من لوحة التحكم"""
+    settings_col.update_one({"_id": "global_config"}, {"$set": new_data}, upsert=True)
+
+def record_usage(tool_slug: str):
+    usage_col.update_one(
+        {"slug": tool_slug},
+        {"$inc": {"count": 1}, "$set": {"last_used": datetime.utcnow()}},
         upsert=True
     )
 
-def get_interaction_count(tool_key: str):
-    data = usage_logs.find_one({"tool_id": tool_key})
-    return data["total_uses"] if data else 0
+def get_usage(tool_slug: str):
+    doc = usage_col.find_one({"slug": tool_slug})
+    return doc["count"] if doc else 0
