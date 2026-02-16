@@ -3,107 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ active.title if active else config.brand_name }} | Professional Utilities</title>
+    <title>{{ active.title if active else config.site_name }}</title>
+    <meta name="description" content="{{ active.short_desc if active else config.site_description }}">
+    
+    <!-- Tailwind + Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .gradient-text { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    </style>
-    <!-- AdSense Head Injection -->
-    {% if config.verify_tag %}
-        {{ config.verify_tag | safe }}
-    {% endif %}
+    
+    <!-- Dynamic Head Code (Analytics/GSC) -->
+    {% if config.head_code %}{{ config.head_code | safe }}{% endif %}
+    <!-- AdSense Code -->
+    {% if config.adsense_code %}{{ config.adsense_code | safe }}{% endif %}
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
 
-    <!-- Navigation -->
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="/" class="text-2xl font-extrabold tracking-tighter text-slate-900">{{ config.brand_name }}</a>
-            <div class="flex items-center space-x-6 text-sm font-bold text-slate-600">
-                <a href="/" class="hover:text-indigo-600 transition">All Utilities</a>
-                <a href="/system/admin" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-full hover:bg-indigo-600 hover:text-white transition">Admin Portal</a>
+    <!-- Header -->
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="text-2xl font-black text-blue-700 tracking-tight">{{ config.site_name }}</a>
+            <div class="text-sm font-medium text-gray-500">
+                Premium Utilities
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-12">
-        {% if not active %}
-            <!-- Hero & Tools Grid -->
-            <div class="max-w-4xl mx-auto text-center mb-16">
-                <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight">Master Your Workflow with <span class="gradient-text">AuraTools</span></h1>
-                <p class="text-xl text-slate-500 font-medium">Free, high-performance web utilities for developers, designers, and SEO experts.</p>
+    <main class="flex-grow container mx-auto px-4 py-12">
+        {% if static_content %}
+            <!-- للصفحات القانونية -->
+            <div class="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 max-w-4xl mx-auto">
+                {{ static_content | safe }}
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {% for t in tools_list %}
-                <a href="/tool/{{ t.slug }}" class="group bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-2xl hover:border-indigo-200 transition-all">
-                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-3">{{ t.title }}</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-4">{{ t.guide_text | truncate(100) }}</p>
-                    <span class="text-indigo-600 font-bold text-xs uppercase tracking-widest">Launch Utility &rarr;</span>
+        {% elif not active %}
+            <!-- الصفحة الرئيسية -->
+            <div class="text-center mb-16 max-w-2xl mx-auto">
+                <h1 class="text-4xl font-extrabold mb-4 text-gray-900">{{ config.site_name }}</h1>
+                <p class="text-xl text-gray-500">{{ config.site_description }}</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {% for tool in tools %}
+                <a href="/tool/{{ tool.slug }}" class="block bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+                    <h2 class="text-xl font-bold mb-2 text-gray-800">{{ tool.title }}</h2>
+                    <p class="text-gray-500 mb-4">{{ tool.short_desc }}</p>
+                    <span class="text-blue-600 font-bold text-sm">Open Tool &rarr;</span>
                 </a>
                 {% endfor %}
             </div>
 
         {% else %}
-            <!-- Active Tool Interface -->
+            <!-- صفحة الأداة -->
             <div class="max-w-5xl mx-auto">
-                <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h1 class="text-4xl md:text-5xl font-black mb-3">{{ active.title }}</h1>
-                        <p class="text-slate-500 font-medium">{{ active.guide_text }}</p>
-                    </div>
-                    <div class="bg-indigo-50 border border-indigo-100 px-5 py-2 rounded-2xl">
-                        <span class="text-indigo-600 font-bold text-sm">Reliability Score: High ({{ usage_stat }} Uses)</span>
-                    </div>
+                <!-- الهيدر الخاص بالأداة -->
+                <div class="text-center mb-10">
+                    <h1 class="text-4xl font-black mb-4">{{ active.title }}</h1>
+                    <p class="text-lg text-gray-600">{{ active.guide }}</p>
                 </div>
 
-                <!-- Tool Functional Area (The Interactive Card) -->
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-indigo-50 mb-16">
+                <!-- منطقة العمل (Application Box) -->
+                <div class="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border border-blue-50 mb-16 text-center">
                     {% if active.slug == 'webp-pro' %}
-                        <form action="/action/webp" method="POST" enctype="multipart/form-data" class="text-center">
-                            <label class="block mb-6">
-                                <span class="sr-only">Choose image</span>
-                                <input type="file" name="image" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-8 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all"/>
-                            </label>
-                            <button class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Optimize & Convert to WebP</button>
+                        <form action="/api/webp" method="POST" enctype="multipart/form-data">
+                            <input type="file" name="file" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-8 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-6 mx-auto max-w-md">
+                            <button class="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Convert Image</button>
                         </form>
                     {% elif active.slug == 'qr-generator' %}
-                        <form action="/action/qr" method="POST" class="space-y-6">
-                            <input type="text" name="text" placeholder="Enter URL or Text to encode..." class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 ring-indigo-100 transition-all">
-                            <button class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-black transition-all">Generate Professional QR Code</button>
+                        <form action="/api/qr" method="POST" class="max-w-md mx-auto space-y-4">
+                            <input type="text" name="text" placeholder="https://..." class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                            <button class="w-full bg-gray-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-black transition">Generate QR</button>
                         </form>
                     {% endif %}
                 </div>
 
-                <!-- SEO Content Layer (The AdSense Magnet) -->
-                <article class="prose prose-indigo max-w-none bg-white p-12 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <div class="text-slate-800 leading-relaxed">
-                        {{ active.content_html | safe }}
-                    </div>
+                <!-- محتوى السيو (منسق باحترافية) -->
+                <!-- استخدام فئة 'prose' من Tailwind Typography يحل مشكلة تكدس النص -->
+                <article class="prose prose-lg prose-blue max-w-none bg-white p-10 md:p-16 rounded-[2rem] border border-gray-100 shadow-sm mx-auto">
+                    {{ active.seo_content | safe }}
                 </article>
             </div>
         {% endif %}
     </main>
 
-    <footer class="bg-slate-900 text-slate-400 py-20 mt-20">
-        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div>
-                <h4 class="text-white text-xl font-bold mb-4">{{ config.brand_name }}</h4>
-                <p class="text-sm max-w-sm">Premium digital tools designed for performance, security, and exceptional user experience.</p>
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t py-12 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex justify-center space-x-8 mb-6 font-medium text-gray-500">
+                <a href="/privacy-policy" class="hover:text-blue-600">Privacy Policy</a>
+                <a href="/terms" class="hover:text-blue-600">Terms of Service</a>
+                <a href="/sitemap.xml" class="hover:text-blue-600">Sitemap</a>
             </div>
-            <div class="flex flex-wrap gap-6 text-sm font-bold">
-                <a href="/sitemap.xml" class="hover:text-white">Sitemap</a>
-                <a href="/ads.txt" class="hover:text-white">Ads.txt</a>
-                <a href="/robots.txt" class="hover:text-white">Robots</a>
-            </div>
-        </div>
-        <div class="container mx-auto px-6 mt-12 pt-8 border-t border-slate-800 text-xs text-center">
-            &copy; 2024 {{ config.brand_name }}. All Rights Reserved.
+            <p class="text-gray-400 text-sm">&copy; 2024 {{ config.site_name }}. {{ config.footer_text }}</p>
         </div>
     </footer>
 
