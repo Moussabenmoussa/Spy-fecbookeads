@@ -1,5 +1,10 @@
 fastapi
 uvicorn 
+pymongo
+groq 
 jinja2 
 pydantic 
-groq
+requests 
+dnspython 
+python-multipart
+Pillow
