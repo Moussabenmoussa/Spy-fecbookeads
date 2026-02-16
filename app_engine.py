@@ -4,112 +4,151 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime
-from bson import ObjectId
 
-from core_db import PLATFORM_SETTINGS, tools_registry, get_interaction_count
-from tool_logic import AuraServices
+from core_db import tools_col, get_config, update_config, get_usage, settings_col
+from tool_logic import ToolEngine
 
-app = FastAPI(title=PLATFORM_SETTINGS["brand_name"])
+app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 security = HTTPBasic()
 
-# --- Security Dependency ---
-def admin_gate(credentials: HTTPBasicCredentials = Depends(security)):
-    if credentials.username != PLATFORM_SETTINGS["admin_user"] or \
-       credentials.password != PLATFORM_SETTINGS["admin_pass"]:
-        raise HTTPException(status_code=401, detail="Secure Access Only")
-    return credentials.username
+# --- حقن الإعدادات في كل القوالب ---
+@app.middleware("http")
+async def add_global_config(request: Request, call_next):
+    request.state.config = get_config()
+    response = await call_next(request)
+    return response
 
-# --- Public Endpoints ---
+# --- التأسيس التلقائي (الذكي) ---
+@app.on_event("startup")
+def seed_db():
+    # التأكد من وجود الأدوات الأساسية
+    if tools_col.count_documents({}) == 0:
+        tools = [
+            {
+                "slug": "webp-pro",
+                "title": "WebP Converter Ultimate",
+                "short_desc": "Convert images to WebP format instantly.",
+                "seo_content": "<h2>Why WebP?</h2><p>WebP is a modern image format...</p>", # محتوى افتراضي
+                "guide": "Upload image -> Click Convert -> Download."
+            },
+            {
+                "slug": "qr-generator",
+                "title": "QR Code Generator",
+                "short_desc": "Create secure QR codes for free.",
+                "seo_content": "<h2>QR Technology</h2><p>Quick Response codes are...</p>",
+                "guide": "Enter text -> Click Generate."
+            }
+        ]
+        tools_col.insert_many(tools)
+
+# --- الحماية ---
+def admin_auth(creds: HTTPBasicCredentials = Depends(security)):
+    user = os.getenv("ADMIN_USER", "admin")
+    pw = os.getenv("ADMIN_PASS", "admin123")
+    if creds.username != user or creds.password != pw:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return creds.username
+
+# --- الواجهة العامة ---
 
 @app.get("/", response_class=HTMLResponse)
-async def home_portal(request: Request):
-    all_tools = list(tools_registry.find())
+async def home(request: Request):
+    tools = list(tools_col.find())
     return templates.TemplateResponse("layout_tool.html", {
-        "request": request,
-        "config": PLATFORM_SETTINGS,
-        "tools_list": all_tools,
-        "active": None
+        "request": request, "tools": tools, "active": None, "config": request.state.config
     })
 
 @app.get("/tool/{slug}", response_class=HTMLResponse)
-async def tool_viewer(request: Request, slug: str):
-    tool = tools_registry.find_one({"slug": slug})
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not in registry")
-    
-    count = get_interaction_count(slug)
+async def tool_view(request: Request, slug: str):
+    tool = tools_col.find_one({"slug": slug})
+    if not tool: raise HTTPException(404)
+    usage = get_usage(slug)
     return templates.TemplateResponse("layout_tool.html", {
-        "request": request,
-        "config": PLATFORM_SETTINGS,
-        "active": tool,
-        "usage_stat": count
+        "request": request, "active": tool, "config": request.state.config, "usage": usage
     })
 
-# --- Functional Handlers (The Workhorses) ---
+# الصفحات القانونية الديناميكية
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy(request: Request):
+    cfg = request.state.config
+    content = f"""
+    <div class="prose max-w-none">
+        <h1>Privacy Policy for {cfg['site_name']}</h1>
+        <p>At {cfg['site_name']}, accessible from the web, one of our main priorities is the privacy of our visitors.</p>
+        <p>If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at {cfg['contact_email']}.</p>
+        <h2>Log Files</h2>
+        <p>{cfg['site_name']} follows a standard procedure of using log files...</p>
+    </div>
+    """
+    return templates.TemplateResponse("layout_tool.html", {
+        "request": request, "static_content": content, "config": cfg
+    })
 
-@app.post("/action/webp")
-async def action_webp(image: UploadFile = File(...)):
-    data = await image.read()
-    processed = AuraServices.process_image_webp(data)
-    return Response(content=processed, media_type="image/webp", 
-                    headers={"Content-Disposition": "attachment; filename=aura_optimized.webp"})
+@app.get("/terms", response_class=HTMLResponse)
+async def terms(request: Request):
+    cfg = request.state.config
+    content = f"""
+    <div class="prose max-w-none">
+        <h1>Terms of Service</h1>
+        <p>By using {cfg['site_name']}, you agree to these terms.</p>
+    </div>
+    """
+    return templates.TemplateResponse("layout_tool.html", {
+        "request": request, "static_content": content, "config": cfg
+    })
 
-@app.post("/action/qr")
-async def action_qr(text: str = Form(...)):
-    qr_img = AuraServices.generate_secure_qr(text)
-    return Response(content=qr_img, media_type="image/png")
+# --- معالجة الأدوات ---
+@app.post("/api/webp")
+async def api_webp(file: UploadFile = File(...)):
+    data = await file.read()
+    res = ToolEngine.convert_webp(data)
+    return Response(content=res, media_type="image/webp")
 
-# --- Admin Management ---
+@app.post("/api/qr")
+async def api_qr(text: str = Form(...)):
+    res = ToolEngine.generate_qr(text)
+    return Response(content=res, media_type="image/png")
+
+# --- لوحة التحكم الحقيقية ---
 
 @app.get("/system/admin", response_class=HTMLResponse)
-async def manage_platform(request: Request, auth: str = Depends(admin_gate)):
-    tools = list(tools_registry.find())
-    return templates.TemplateResponse("layout_admin.html", {"request": request, "tools": tools})
+async def admin_dash(request: Request, user: str = Depends(admin_auth)):
+    tools = list(tools_col.find())
+    config = get_config()
+    return templates.TemplateResponse("layout_admin.html", {
+        "request": request, "tools": tools, "config": config
+    })
 
-@app.post("/system/tool/save")
-async def save_tool_seo(
-    id_str: str = Form(""),
+@app.post("/system/admin/settings")
+async def save_settings(
+    site_name: str = Form(...),
+    site_desc: str = Form(...),
+    contact_email: str = Form(...),
+    head_code: str = Form(""),
+    adsense_code: str = Form(""),
+    user: str = Depends(admin_auth)
+):
+    update_config({
+        "site_name": site_name,
+        "site_description": site_desc,
+        "contact_email": contact_email,
+        "head_code": head_code,
+        "adsense_code": adsense_code
+    })
+    return RedirectResponse("/system/admin", status_code=303)
+
+@app.post("/system/admin/tool/edit")
+async def edit_tool(
     slug: str = Form(...),
     title: str = Form(...),
-    seo_content: str = Form(...), # المحتوى الضخم الذي ستجلبه من Gemini للقبول
+    desc: str = Form(...),
+    seo: str = Form(...),
     guide: str = Form(...),
-    auth: str = Depends(admin_gate)
+    user: str = Depends(admin_auth)
 ):
-    payload = {
-        "slug": slug,
-        "title": title,
-        "content_html": seo_content,
-        "guide_text": guide,
-        "last_sync": datetime.utcnow()
-    }
-    if id_str:
-        tools_registry.update_one({"_id": ObjectId(id_str)}, {"$set": payload})
-    else:
-        tools_registry.insert_one(payload)
-    return RedirectResponse(url="/system/admin", status_code=303)
-
-# --- Technical Compliance (The AdSense Trio) ---
-
-@app.get("/sitemap.xml")
-async def engine_sitemap():
-    tools = tools_registry.find()
-    base = f"https://{PLATFORM_SETTINGS['base_domain']}"
-    xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-    xml += f'<url><loc>{base}/</loc></url>'
-    for t in tools:
-        xml += f'<url><loc>{base}/tool/{t["slug"]}</loc></url>'
-    xml += '</urlset>'
-    return Response(content=xml, media_type="application/xml")
-
-@app.get("/ads.txt")
-async def ads_manifest():
-    if not PLATFORM_SETTINGS["adsense_pub_id"]: return Response(content="")
-    line = f"google.com, {PLATFORM_SETTINGS['adsense_pub_id']}, DIRECT, f08c47fec0942fa0"
-    return Response(content=line, media_type="text/plain")
-
-@app.get("/robots.txt")
-async def robots_policy():
-    base = f"https://{PLATFORM_SETTINGS['base_domain']}"
-    content = f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml"
-    return Response(content=content, media_type="text/plain")
+    tools_col.update_one(
+        {"slug": slug},
+        {"$set": {"title": title, "short_desc": desc, "seo_content": seo, "guide": guide}}
+    )
+    return RedirectResponse("/system/admin", status_code=303)
