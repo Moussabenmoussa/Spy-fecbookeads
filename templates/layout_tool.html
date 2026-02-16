@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ active.title if active else config.brand_name }} | Professional Utilities</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .gradient-text { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+    <!-- AdSense Head Injection -->
+    {% if config.verify_tag %}
+        {{ config.verify_tag | safe }}
+    {% endif %}
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-extrabold tracking-tighter text-slate-900">{{ config.brand_name }}</a>
+            <div class="flex items-center space-x-6 text-sm font-bold text-slate-600">
+                <a href="/" class="hover:text-indigo-600 transition">All Utilities</a>
+                <a href="/system/admin" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-full hover:bg-indigo-600 hover:text-white transition">Admin Portal</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-12">
+        {% if not active %}
+            <!-- Hero & Tools Grid -->
+            <div class="max-w-4xl mx-auto text-center mb-16">
+                <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight">Master Your Workflow with <span class="gradient-text">AuraTools</span></h1>
+                <p class="text-xl text-slate-500 font-medium">Free, high-performance web utilities for developers, designers, and SEO experts.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for t in tools_list %}
+                <a href="/tool/{{ t.slug }}" class="group bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-2xl hover:border-indigo-200 transition-all">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">{{ t.title }}</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-4">{{ t.guide_text | truncate(100) }}</p>
+                    <span class="text-indigo-600 font-bold text-xs uppercase tracking-widest">Launch Utility &rarr;</span>
+                </a>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <!-- Active Tool Interface -->
+            <div class="max-w-5xl mx-auto">
+                <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 class="text-4xl md:text-5xl font-black mb-3">{{ active.title }}</h1>
+                        <p class="text-slate-500 font-medium">{{ active.guide_text }}</p>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 px-5 py-2 rounded-2xl">
+                        <span class="text-indigo-600 font-bold text-sm">Reliability Score: High ({{ usage_stat }} Uses)</span>
+                    </div>
+                </div>
+
+                <!-- Tool Functional Area (The Interactive Card) -->
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-indigo-50 mb-16">
+                    {% if active.slug == 'webp-pro' %}
+                        <form action="/action/webp" method="POST" enctype="multipart/form-data" class="text-center">
+                            <label class="block mb-6">
+                                <span class="sr-only">Choose image</span>
+                                <input type="file" name="image" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-8 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all"/>
+                            </label>
+                            <button class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Optimize & Convert to WebP</button>
+                        </form>
+                    {% elif active.slug == 'qr-generator' %}
+                        <form action="/action/qr" method="POST" class="space-y-6">
+                            <input type="text" name="text" placeholder="Enter URL or Text to encode..." class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 focus:ring-2 ring-indigo-100 transition-all">
+                            <button class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-black transition-all">Generate Professional QR Code</button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <!-- SEO Content Layer (The AdSense Magnet) -->
+                <article class="prose prose-indigo max-w-none bg-white p-12 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div class="text-slate-800 leading-relaxed">
+                        {{ active.content_html | safe }}
+                    </div>
+                </article>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-20 mt-20">
+        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div>
+                <h4 class="text-white text-xl font-bold mb-4">{{ config.brand_name }}</h4>
+                <p class="text-sm max-w-sm">Premium digital tools designed for performance, security, and exceptional user experience.</p>
+            </div>
+            <div class="flex flex-wrap gap-6 text-sm font-bold">
+                <a href="/sitemap.xml" class="hover:text-white">Sitemap</a>
+                <a href="/ads.txt" class="hover:text-white">Ads.txt</a>
+                <a href="/robots.txt" class="hover:text-white">Robots</a>
+            </div>
+        </div>
+        <div class="container mx-auto px-6 mt-12 pt-8 border-t border-slate-800 text-xs text-center">
+            &copy; 2024 {{ config.brand_name }}. All Rights Reserved.
+        </div>
+    </footer>
+
+</body>
+</html>
