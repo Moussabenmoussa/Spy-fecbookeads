@@ -1,70 +1,35 @@
 {
-  "main_store_url": "https://YOUR-BLOGGER-URL.blogspot.com", 
+  "main_store_url": "https://somaxpres.onrender.com", 
   "devices": [
-    {
-      "id": "firestick",
-      "name": "Amazon Firestick 4K",
-      "slug": "firestick",
-      "app": "IPTV Smarters Pro",
-      "guide": "enable 'Apps from Unknown Sources' in settings, then use Downloader app code to install.",
-      "pros": "Portable, cheap, and Android-based."
-    },
-    {
-      "id": "samsung",
-      "name": "Samsung Smart TV",
-      "slug": "samsung-tv",
-      "app": "IBO Player",
-      "guide": "search directly in the Samsung Tizen App Store. No external box needed.",
-      "pros": "Great 4K upscaling and stable Tizen OS."
-    },
-    {
-      "id": "lg",
-      "name": "LG WebOS TV",
-      "slug": "lg-smart-tv",
-      "app": "IBO Player",
-      "guide": "download from LG Content Store. Avoid using the browser for streaming.",
-      "pros": "Magic Remote makes navigation very easy."
-    },
-    {
-      "id": "apple",
-      "name": "Apple TV 4K",
-      "slug": "apple-tv",
-      "app": "000 Player",
-      "guide": "install directly from the App Store. One of the smoothest experiences.",
-      "pros": "Best-in-class processor for lag-free 4K."
-    },
-    {
-      "id": "android",
-      "name": "Android TV Box",
-      "slug": "android-box",
-      "app": "TiviMate",
-      "guide": "install TiviMate via Google Play or sideload the APK.",
-      "pros": "The most customizable experience with TiviMate."
-    },
-    {
-      "id": "ios",
-      "name": "iPhone & iPad",
-      "slug": "ios-device",
-      "app": "Smarters Player Lite",
-      "guide": "download Smarters Player Lite from the App Store.",
-      "pros": "Watch your favorite shows on the go."
-    },
-    {
-      "id": "windows",
-      "name": "Windows PC",
-      "slug": "windows-pc",
-      "app": "VLC Media Player",
-      "guide": "open Network Stream in VLC and paste your M3U link.",
-      "pros": "No installation required if you have VLC."
-    }
+    { "id": "firestick", "name": "Amazon Firestick 4K", "slug": "firestick", "app": "IPTV Smarters Pro", "guide": "Use 'Downloader' app to sideload the APK.", "pros": "Best portable streaming device." },
+    { "id": "samsung", "name": "Samsung Smart TV", "slug": "samsung-tv", "app": "IBO Player", "guide": "Search in Tizen App Store.", "pros": "Excellent upscaling for 4K channels." },
+    { "id": "lg", "name": "LG WebOS TV", "slug": "lg-smart-tv", "app": "IBO Player", "guide": "Install via LG Content Store.", "pros": "Smooth navigation with Magic Remote." },
+    { "id": "apple", "name": "Apple TV 4K", "slug": "apple-tv", "app": "000 Player", "guide": "Download directly from App Store.", "pros": "The fastest processor for buffer-free streams." },
+    { "id": "android", "name": "Android TV Box", "slug": "android-box", "app": "TiviMate", "guide": "Get it from Google Play Store.", "pros": "Ultimate customization with TiviMate." },
+    { "id": "ios", "name": "iPhone & iPad", "slug": "ios-device", "app": "Smarters Player Lite", "guide": "Available on Apple App Store.", "pros": "Watch live TV anywhere you go." },
+    { "id": "windows", "name": "Windows PC", "slug": "windows-pc", "app": "VLC Media Player", "guide": "Open Network Stream in VLC.", "pros": "No extra hardware needed." },
+    { "id": "mac", "name": "MacOS", "slug": "mac-book", "app": "GSE Smart IPTV", "guide": "Install via Mac App Store.", "pros": "High-resolution retina display support." },
+    { "id": "nvidia", "name": "Nvidia Shield Pro", "slug": "nvidia-shield", "app": "TiviMate Premium", "guide": "Google Play Store download.", "pros": "The most powerful Android streamer." },
+    { "id": "chromecast", "name": "Chromecast with Google TV", "slug": "chromecast", "app": "Televizo", "guide": "Install from Play Store.", "pros": "Clean interface and voice remote." },
+    { "id": "mag", "name": "MAG Box", "slug": "mag-device", "app": "Portal System", "guide": "Register MAC address in settings.", "pros": "Dedicated classic IPTV hardware." },
+    { "id": "roku", "name": "Roku TV", "slug": "roku", "app": "Web Video Caster", "guide": "Mirror from phone (Roku has no native IPTV apps).", "pros": "Simple interface for beginners." }
   ],
   "countries": [
-    { "name": "United States", "slug": "usa", "code": "US", "tip": "Use a VPN if your ISP throttles streaming speeds." },
-    { "name": "United Kingdom", "slug": "uk", "code": "UK", "tip": "Strict anti-piracy laws. Secure connection is mandatory." },
-    { "name": "Canada", "slug": "canada", "code": "CA", "tip": "Great for local sports channels and French content." },
-    { "name": "Australia", "slug": "australia", "code": "AU", "tip": "Optimized latency for long-distance servers." },
-    { "name": "Germany", "slug": "germany", "code": "DE", "tip": "Bundesliga coverage in 4K UHD is priority." },
-    { "name": "France", "slug": "france", "code": "FR", "tip": "Includes Canal+ and Ligue 1 stable streams." },
-    { "name": "UAE", "slug": "uae", "code": "AE", "tip": "Best option for expats to watch home channels." }
+    { "name": "United States", "slug": "usa", "code": "US", "tip": "Use a VPN to avoid ISP throttling during NFL games." },
+    { "name": "United Kingdom", "slug": "uk", "code": "UK", "tip": "Strict anti-piracy laws. Secure connection required for Premier League." },
+    { "name": "Canada", "slug": "canada", "code": "CA", "tip": "Great for local CBC and TSN sports channels." },
+    { "name": "Australia", "slug": "australia", "code": "AU", "tip": "Low latency servers recommended for AFL and Cricket." },
+    { "name": "Germany", "slug": "germany", "code": "DE", "tip": "Bundesliga streams require high bitrate stability." },
+    { "name": "France", "slug": "france", "code": "FR", "tip": "Access Canal+ and Ligue 1 seamlessly." },
+    { "name": "Spain", "slug": "spain", "code": "ES", "tip": "Watch La Liga without interruptions." },
+    { "name": "Italy", "slug": "italy", "code": "IT", "tip": "Serie A streaming optimized for Italian ISPs." },
+    { "name": "Netherlands", "slug": "netherlands", "code": "NL", "tip": "Ziggo Sport and Dutch channels in 4K." },
+    { "name": "Belgium", "slug": "belgium", "code": "BE", "tip": "Both French and Dutch content available." },
+    { "name": "Sweden", "slug": "sweden", "code": "SE", "tip": "High-speed Nordic servers for Viaplay." },
+    { "name": "Switzerland", "slug": "switzerland", "code": "CH", "tip": "Privacy-friendly laws, great for streaming." },
+    { "name": "UAE", "slug": "uae", "code": "AE", "tip": "Best for expats to watch home channels." },
+    { "name": "Saudi Arabia", "slug": "saudi-arabia", "code": "SA", "tip": "Watch SSC and local sports in high quality." },
+    { "name": "Qatar", "slug": "qatar", "code": "QA", "tip": "beIN Sports home coverage with zero lag." },
+    { "name": "Brazil", "slug": "brazil", "code": "BR", "tip": "Brasileirão and local novelas in FHD." }
   ]
 }
