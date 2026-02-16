@@ -5,80 +5,99 @@
     <title>pSEO Master Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>body { background: #111827; color: white; font-family: sans-serif; }</style>
 </head>
-<body class="p-10">
+<body class="p-4 md:p-10">
     
-    <!-- 
-      FIX: We wrap the entire Vue app in {% raw %} ... {% endraw %}
-      This tells Python/Jinja2 to ignore {{ variables }} inside here 
-      so Vue.js can handle them in the browser.
-    -->
     {% raw %}
     <div id="app" class="max-w-6xl mx-auto">
         
         <!-- Header -->
         <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-bold text-blue-500">🚀 pSEO Engine</h1>
-            <input type="password" v-model="password" placeholder="Enter Secret Key" class="bg-gray-800 p-2 rounded border border-gray-700 text-white">
+            <h1 class="text-3xl font-bold text-blue-500"><i class="fas fa-rocket"></i> pSEO Engine</h1>
+            <input type="password" v-model="password" placeholder="Enter Secret Key" class="bg-gray-800 p-2 rounded border border-gray-700 text-white w-64">
         </div>
 
         <!-- 1. Project Creator -->
-        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700">
-            <h2 class="text-xl font-bold mb-4">1. Create New Project</h2>
+        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700 shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-emerald-400">1. Create New Project</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input v-model="newProject.name" placeholder="Project Name (e.g. IPTV Guide)" class="bg-gray-900 p-3 rounded text-white">
-                <input v-model="newProject.slug" placeholder="Slug (e.g. iptv)" class="bg-gray-900 p-3 rounded text-white">
-                <input v-model="newProject.domain_url" placeholder="Money Site URL" class="bg-gray-900 p-3 rounded text-white">
-                <input v-model="newProject.google_verification" placeholder="Google Meta Tag Code" class="bg-gray-900 p-3 rounded col-span-1 md:col-span-3 text-white">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Project Name</label>
+                    <input v-model="newProject.name" placeholder="e.g. IPTV Guide" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">URL Slug</label>
+                    <input v-model="newProject.slug" placeholder="e.g. iptv-guide" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Money Site URL</label>
+                    <input v-model="newProject.domain_url" placeholder="https://yourstore.com" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="text-xs text-gray-400 block mb-1">Google Meta Tag (Verification)</label>
+                    <input v-model="newProject.google_verification" placeholder='<meta name="google-site-verification" content="..." />' class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 font-mono text-sm">
+                </div>
             </div>
-            <button @click="createProject" class="mt-4 bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-bold">Create Project</button>
+            <button @click="createProject" class="mt-4 bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded font-bold transition flex items-center gap-2">
+                <i class="fas fa-plus"></i> Create Project
+            </button>
         </div>
 
-        <!-- 2. Data Matrix (Excel-like) -->
-        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700">
-            <h2 class="text-xl font-bold mb-4">2. Data Matrix (Variables)</h2>
-            <div class="flex gap-2 mb-4">
-                <button @click="addRow" class="bg-green-600 px-3 py-1 rounded text-sm">+ Add Row</button>
-                <span class="text-gray-400 text-sm py-1">Fill the table. We will generate 1 page per row.</span>
+        <!-- 2. Data Matrix -->
+        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-blue-400">2. Data Matrix (Variables)</h2>
+                <button @click="addRow" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold transition">+ Add Row</button>
             </div>
             
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-gray-700">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-gray-900">
-                            <th class="p-3 border border-gray-700">Device</th>
-                            <th class="p-3 border border-gray-700">Country</th>
-                            <th class="p-3 border border-gray-700">App Name</th>
-                            <th class="p-3 border border-gray-700">Action</th>
+                        <tr class="bg-gray-900 text-gray-400 text-sm">
+                            <th class="p-3 border-b border-gray-700">Device</th>
+                            <th class="p-3 border-b border-gray-700">Country</th>
+                            <th class="p-3 border-b border-gray-700">App Name</th>
+                            <th class="p-3 border-b border-gray-700 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(row, index) in dataRows" :key="index">
-                            <td class="border border-gray-700 p-1"><input v-model="row.device" class="bg-transparent w-full p-2 text-white"></td>
-                            <td class="border border-gray-700 p-1"><input v-model="row.country" class="bg-transparent w-full p-2 text-white"></td>
-                            <td class="border border-gray-700 p-1"><input v-model="row.app_name" class="bg-transparent w-full p-2 text-white"></td>
-                            <td class="border border-gray-700 p-1 text-center"><button @click="removeRow(index)" class="text-red-500 font-bold">x</button></td>
+                        <tr v-for="(row, index) in dataRows" :key="index" class="hover:bg-gray-750">
+                            <td class="border-b border-gray-700 p-2"><input v-model="row.device" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
+                            <td class="border-b border-gray-700 p-2"><input v-model="row.country" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
+                            <td class="border-b border-gray-700 p-2"><input v-model="row.app_name" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
+                            <td class="border-b border-gray-700 p-2 text-center"><button @click="removeRow(index)" class="text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <p class="text-xs text-gray-500 mt-2">Total Rows: {{ dataRows.length }} (Will generate {{ dataRows.length }} pages)</p>
         </div>
 
         <!-- 3. Generator -->
-        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
-            <h2 class="text-xl font-bold mb-4">3. Launch Generation</h2>
-            <div class="mb-4">
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-purple-600"></div>
+            <h2 class="text-xl font-bold mb-4 text-purple-400">3. Launch Generation</h2>
+            
+            <div class="mb-6">
                 <label class="block text-gray-400 text-sm mb-2">Article Title Template</label>
-                <input v-model="titleTemplate" class="w-full bg-gray-900 p-3 rounded text-white" placeholder="Best IPTV for {{device}} in {{country}} [2026 Guide]">
+                <input v-model="titleTemplate" class="w-full bg-gray-900 p-4 rounded-lg text-white border border-gray-600 font-mono text-sm" placeholder="Best IPTV for {{device}} in {{country}} [2026 Guide]">
+                <p class="text-xs text-gray-500 mt-2">Use <span class="text-yellow-400">{{device}}</span>, <span class="text-yellow-400">{{country}}</span>, <span class="text-yellow-400">{{app_name}}</span> as variables.</p>
             </div>
             
-            <!-- This was causing the error, now protected by raw tag -->
-            <button @click="generatePages" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold text-lg transition">
-                🚀 Generate {{ dataRows.length }} Pages Now
+            <button @click="generatePages" :disabled="isGenerating" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2 disabled:opacity-50">
+                <span v-if="!isGenerating">🚀 Generate {{ dataRows.length }} Pages Now</span>
+                <span v-else><i class="fas fa-spinner fa-spin"></i> Processing with AI...</span>
             </button>
             
-            <p v-if="message" class="mt-4 text-center text-green-400 text-lg">{{ message }}</p>
+            <div v-if="message" :class="messageClass" class="mt-4 p-4 rounded-lg text-center font-bold">
+                {{ message }}
+            </div>
+
+            <div v-if="successLink" class="mt-4 text-center">
+                <a :href="successLink" target="_blank" class="text-blue-400 hover:underline">View Sitemap</a>
+            </div>
         </div>
 
     </div>
@@ -94,57 +113,61 @@
                     newProject: { name: '', slug: '', domain_url: '', google_verification: '' },
                     dataRows: [
                         { device: 'Samsung TV', country: 'USA', app_name: 'IBO Player' },
-                        { device: 'Firestick', country: 'UK', app_name: 'Smarters' }
+                        { device: 'Firestick', country: 'UK', app_name: 'Smarters Pro' }
                     ],
                     titleTemplate: 'How to setup IPTV on {{device}} in {{country}}',
-                    message: ''
+                    message: '',
+                    messageClass: '',
+                    isGenerating: false,
+                    successLink: ''
                 }
             },
             methods: {
                 async createProject() {
                     if(!this.password) return alert("Enter Secret Key first!");
                     
-                    const formData = new FormData();
-                    formData.append('password', this.password);
-                    // Add other fields logic here as needed for the backend
-                    formData.append('name', this.newProject.name);
-                    formData.append('slug', this.newProject.slug);
-                    formData.append('domain_url', this.newProject.domain_url);
-                    formData.append('google_verification', this.newProject.google_verification);
-
+                    // Sending password as Query Param to avoid JSON/Form conflict in FastAPI
                     try {
-                        // We use a JSON body for cleaner API in this advanced version
-                        const res = await fetch('/api/projects', {
+                        const res = await fetch(`/api/projects?password=${this.password}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ ...this.newProject }),
-                            // Note: In real production, pass password via header or separate auth
+                            body: JSON.stringify(this.newProject)
                         });
-                        // For the simplistic form data version in main.py:
-                         // Adjusting to match main.py specific expectation if it uses Form(...)
-                         // Let's assume standard interaction.
-                        alert("Project creation logic sent. (Ensure backend handles JSON or Form correctly)");
+                        
+                        const data = await res.json();
+                        
+                        if(res.ok) {
+                            alert("✅ Project Created Successfully!");
+                        } else {
+                            alert("❌ Error: " + (data.detail || "Failed"));
+                        }
                     } catch(e) {
-                        console.log(e);
+                        alert("Network Error: " + e.message);
                     }
                 },
+                
                 addRow() {
                     this.dataRows.push({ device: '', country: '', app_name: '' });
                 },
+                
                 removeRow(index) {
                     this.dataRows.splice(index, 1);
                 },
+                
                 async generatePages() {
-                    if(!this.password) return alert("Enter Password");
-                    
+                    if(!this.password) return alert("Enter Secret Key!");
+                    if(this.dataRows.length === 0) return alert("Add at least one row of data.");
+
+                    this.isGenerating = true;
+                    this.message = "Initializing AI Engine... Please wait.";
+                    this.messageClass = "bg-gray-900 text-yellow-400";
+                    this.successLink = '';
+
                     const formData = new FormData();
                     formData.append('password', this.password);
-                    // Use 'iptv' as default project slug or bind it
                     formData.append('project_slug', this.newProject.slug || 'iptv'); 
                     formData.append('template', this.titleTemplate);
                     formData.append('data_rows', JSON.stringify(this.dataRows));
-
-                    this.message = "⏳ Generating pages with AI... This may take a few seconds...";
 
                     try {
                         const res = await fetch('/api/generate-batch', {
@@ -152,13 +175,20 @@
                             body: formData
                         });
                         const data = await res.json();
+                        
                         if(res.ok) {
                             this.message = "✅ " + data.message;
+                            this.messageClass = "bg-green-900/50 text-green-400";
+                            this.successLink = `/sitemap/${this.newProject.slug || 'iptv'}.xml`;
                         } else {
-                            this.message = "❌ Error: " + (data.detail || "Check password/project slug");
+                            this.message = "❌ Error: " + (data.detail || "Check Key/Slug");
+                            this.messageClass = "bg-red-900/50 text-red-400";
                         }
                     } catch(e) {
                         this.message = "❌ Network Error: " + e.message;
+                        this.messageClass = "bg-red-900/50 text-red-400";
+                    } finally {
+                        this.isGenerating = false;
                     }
                 }
             }
