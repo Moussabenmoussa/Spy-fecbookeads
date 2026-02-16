@@ -2,101 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>pSEO Master Dashboard</title>
+    <title>pSEO Dashboard - Hybrid Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>body { background: #111827; color: white; font-family: sans-serif; }</style>
 </head>
-<body class="p-4 md:p-10">
-    
+<body class="p-6">
     {% raw %}
-    <div id="app" class="max-w-6xl mx-auto">
+    <div id="app" class="max-w-5xl mx-auto">
         
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-bold text-blue-500"><i class="fas fa-rocket"></i> pSEO Engine</h1>
-            <input type="password" v-model="password" placeholder="Enter Secret Key" class="bg-gray-800 p-2 rounded border border-gray-700 text-white w-64">
-        </div>
-
-        <!-- 1. Project Creator -->
-        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700 shadow-lg">
-            <h2 class="text-xl font-bold mb-4 text-emerald-400">1. Create New Project</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="text-xs text-gray-400 block mb-1">Project Name</label>
-                    <input v-model="newProject.name" placeholder="e.g. IPTV Guide" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 block mb-1">URL Slug</label>
-                    <input v-model="newProject.slug" placeholder="e.g. iptv-guide" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 block mb-1">Money Site URL</label>
-                    <input v-model="newProject.domain_url" placeholder="https://yourstore.com" class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 focus:border-blue-500 outline-none">
-                </div>
-                <div class="md:col-span-3">
-                    <label class="text-xs text-gray-400 block mb-1">Google Meta Tag (Verification)</label>
-                    <input v-model="newProject.google_verification" placeholder='<meta name="google-site-verification" content="..." />' class="bg-gray-900 p-3 rounded text-white w-full border border-gray-600 font-mono text-sm">
-                </div>
+        <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-2xl font-bold text-blue-500"><i class="fas fa-rocket"></i> pSEO Commander</h1>
+            <div class="flex gap-2">
+                <input v-model="password" type="password" placeholder="Secret Key" class="bg-gray-800 p-2 rounded border border-gray-600 text-sm">
             </div>
-            <button @click="createProject" class="mt-4 bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded font-bold transition flex items-center gap-2">
-                <i class="fas fa-plus"></i> Create Project
-            </button>
-        </div>
+        </header>
 
-        <!-- 2. Data Matrix -->
-        <div class="bg-gray-800 p-6 rounded-xl mb-8 border border-gray-700 shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-blue-400">2. Data Matrix (Variables)</h2>
-                <button @click="addRow" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold transition">+ Add Row</button>
+        <!-- HYBRID WRITER SECTION -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+            <div class="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="font-bold text-lg text-white"><i class="fas fa-pen-nib text-purple-500"></i> الكاتب الهجين (Gemini Assistant)</h2>
+                <span class="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">Manual Quality Mode</span>
             </div>
             
-            <div class="overflow-x-auto rounded-lg border border-gray-700">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-900 text-gray-400 text-sm">
-                            <th class="p-3 border-b border-gray-700">Device</th>
-                            <th class="p-3 border-b border-gray-700">Country</th>
-                            <th class="p-3 border-b border-gray-700">App Name</th>
-                            <th class="p-3 border-b border-gray-700 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(row, index) in dataRows" :key="index" class="hover:bg-gray-750">
-                            <td class="border-b border-gray-700 p-2"><input v-model="row.device" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
-                            <td class="border-b border-gray-700 p-2"><input v-model="row.country" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
-                            <td class="border-b border-gray-700 p-2"><input v-model="row.app_name" class="bg-gray-900 rounded p-2 text-white w-full border border-gray-700 focus:border-blue-500"></td>
-                            <td class="border-b border-gray-700 p-2 text-center"><button @click="removeRow(index)" class="text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <p class="text-xs text-gray-500 mt-2">Total Rows: {{ dataRows.length }} (Will generate {{ dataRows.length }} pages)</p>
-        </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- STEP 1: Define Target -->
+                <div class="space-y-4">
+                    <h3 class="text-sm font-bold text-blue-400 uppercase">1. حدد الهدف</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input v-model="target.device" placeholder="Device (e.g. Samsung TV)" class="bg-gray-900 p-3 rounded border border-gray-600 w-full text-sm">
+                        <input v-model="target.country" placeholder="Country (e.g. UK)" class="bg-gray-900 p-3 rounded border border-gray-600 w-full text-sm">
+                    </div>
+                    <input v-model="target.app_name" placeholder="Best App (e.g. IBO Player)" class="bg-gray-900 p-3 rounded border border-gray-600 w-full text-sm">
+                    
+                    <button @click="generatePrompt" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded font-bold text-sm transition">
+                        <i class="fas fa-magic"></i> توليد البرومبت القائد
+                    </button>
 
-        <!-- 3. Generator -->
-        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1 h-full bg-purple-600"></div>
-            <h2 class="text-xl font-bold mb-4 text-purple-400">3. Launch Generation</h2>
-            
-            <div class="mb-6">
-                <label class="block text-gray-400 text-sm mb-2">Article Title Template</label>
-                <input v-model="titleTemplate" class="w-full bg-gray-900 p-4 rounded-lg text-white border border-gray-600 font-mono text-sm" placeholder="Best IPTV for {{device}} in {{country}} [2026 Guide]">
-                <p class="text-xs text-gray-500 mt-2">Use <span class="text-yellow-400">{{device}}</span>, <span class="text-yellow-400">{{country}}</span>, <span class="text-yellow-400">{{app_name}}</span> as variables.</p>
-            </div>
-            
-            <button @click="generatePages" :disabled="isGenerating" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2 disabled:opacity-50">
-                <span v-if="!isGenerating">🚀 Generate {{ dataRows.length }} Pages Now</span>
-                <span v-else><i class="fas fa-spinner fa-spin"></i> Processing with AI...</span>
-            </button>
-            
-            <div v-if="message" :class="messageClass" class="mt-4 p-4 rounded-lg text-center font-bold">
-                {{ message }}
-            </div>
+                    <!-- Prompt Display -->
+                    <div v-if="generatedPrompt" class="mt-4">
+                        <label class="text-xs text-gray-500 block mb-1">انسخ هذا وأرسله لـ Gemini/ChatGPT:</label>
+                        <textarea readonly class="w-full h-32 bg-black/50 p-2 text-xs text-green-400 font-mono rounded border border-gray-700">{{ generatedPrompt }}</textarea>
+                        <button @click="copyPrompt" class="mt-2 w-full bg-gray-700 hover:bg-gray-600 text-xs py-1 rounded">نسخ البرومبت</button>
+                    </div>
+                </div>
 
-            <div v-if="successLink" class="mt-4 text-center">
-                <a :href="successLink" target="_blank" class="text-blue-400 hover:underline">View Sitemap</a>
+                <!-- STEP 2: Paste & Publish -->
+                <div class="space-y-4 border-l border-gray-700 pl-8">
+                    <h3 class="text-sm font-bold text-green-400 uppercase">2. النشر النهائي</h3>
+                    
+                    <div>
+                        <label class="text-xs text-gray-400">عنوان المقال (Title)</label>
+                        <input v-model="articleTitle" class="w-full bg-gray-900 p-2 rounded border border-gray-600 mb-2 text-sm">
+                        
+                        <label class="text-xs text-gray-400">الرابط (Slug) - يُنشأ تلقائياً</label>
+                        <input v-model="articleSlug" class="w-full bg-gray-900 p-2 rounded border border-gray-600 text-xs text-gray-500 font-mono">
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-gray-400">لصق محتوى Gemini هنا (HTML):</label>
+                        <textarea v-model="pastedContent" rows="8" class="w-full bg-gray-900 p-3 rounded border border-gray-600 text-sm text-gray-300" placeholder="<p>Paste the HTML output here...</p>"></textarea>
+                    </div>
+
+                    <button @click="publishArticle" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold text-sm shadow-lg transition">
+                        <i class="fas fa-check-circle"></i> نشر المقال فوراً
+                    </button>
+
+                    <p v-if="statusMsg" :class="statusColor" class="text-center text-sm font-bold mt-2">{{ statusMsg }}</p>
+                </div>
+
             </div>
         </div>
 
@@ -110,85 +86,80 @@
             data() {
                 return {
                     password: '',
-                    newProject: { name: '', slug: '', domain_url: '', google_verification: '' },
-                    dataRows: [
-                        { device: 'Samsung TV', country: 'USA', app_name: 'IBO Player' },
-                        { device: 'Firestick', country: 'UK', app_name: 'Smarters Pro' }
-                    ],
-                    titleTemplate: 'How to setup IPTV on {{device}} in {{country}}',
-                    message: '',
-                    messageClass: '',
-                    isGenerating: false,
-                    successLink: ''
+                    target: { device: '', country: '', app_name: '' },
+                    generatedPrompt: '',
+                    pastedContent: '',
+                    articleTitle: '',
+                    statusMsg: '',
+                    statusColor: 'text-white'
+                }
+            },
+            computed: {
+                articleSlug() {
+                    if (!this.target.device || !this.target.country) return '';
+                    return `setup-iptv-on-${this.target.device}-in-${this.target.country}`
+                        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                }
+            },
+            watch: {
+                // Auto-generate title when inputs change
+                target: {
+                    handler(val) {
+                        if(val.device && val.country) {
+                            this.articleTitle = `How to Setup IPTV on ${val.device} in ${val.country} (2026 Guide)`;
+                        }
+                    },
+                    deep: true
                 }
             },
             methods: {
-                async createProject() {
-                    if(!this.password) return alert("Enter Secret Key first!");
+                async generatePrompt() {
+                    if(!this.target.device) return alert("Please fill device details");
                     
-                    // Sending password as Query Param to avoid JSON/Form conflict in FastAPI
+                    const res = await fetch('/api/generate-master-prompt', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(this.target)
+                    });
+                    const data = await res.json();
+                    this.generatedPrompt = data.prompt;
+                },
+                copyPrompt() {
+                    navigator.clipboard.writeText(this.generatedPrompt);
+                    alert("تم النسخ! اذهب لـ Gemini الآن.");
+                },
+                async publishArticle() {
+                    if(!this.password) return alert("Enter Secret Key");
+                    if(!this.pastedContent) return alert("Paste content first");
+
+                    this.statusMsg = "جاري النشر...";
+                    
                     try {
-                        const res = await fetch(`/api/projects?password=${this.password}`, {
+                        const res = await fetch('/api/publish-manual', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.newProject)
-                        });
-                        
-                        const data = await res.json();
-                        
-                        if(res.ok) {
-                            alert("✅ Project Created Successfully!");
-                        } else {
-                            alert("❌ Error: " + (data.detail || "Failed"));
-                        }
-                    } catch(e) {
-                        alert("Network Error: " + e.message);
-                    }
-                },
-                
-                addRow() {
-                    this.dataRows.push({ device: '', country: '', app_name: '' });
-                },
-                
-                removeRow(index) {
-                    this.dataRows.splice(index, 1);
-                },
-                
-                async generatePages() {
-                    if(!this.password) return alert("Enter Secret Key!");
-                    if(this.dataRows.length === 0) return alert("Add at least one row of data.");
-
-                    this.isGenerating = true;
-                    this.message = "Initializing AI Engine... Please wait.";
-                    this.messageClass = "bg-gray-900 text-yellow-400";
-                    this.successLink = '';
-
-                    const formData = new FormData();
-                    formData.append('password', this.password);
-                    formData.append('project_slug', this.newProject.slug || 'iptv'); 
-                    formData.append('template', this.titleTemplate);
-                    formData.append('data_rows', JSON.stringify(this.dataRows));
-
-                    try {
-                        const res = await fetch('/api/generate-batch', {
-                            method: 'POST',
-                            body: formData
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                password: this.password,
+                                project_slug: 'iptv-guides', // افتراضي
+                                slug: this.articleSlug,
+                                title: this.articleTitle,
+                                html_content: this.pastedContent,
+                                variables: this.target
+                            })
                         });
                         const data = await res.json();
                         
-                        if(res.ok) {
-                            this.message = "✅ " + data.message;
-                            this.messageClass = "bg-green-900/50 text-green-400";
-                            this.successLink = `/sitemap/${this.newProject.slug || 'iptv'}.xml`;
+                        if(data.status === 'success') {
+                            this.statusMsg = `✅ تم النشر! الرابط: ${data.url}`;
+                            this.statusColor = 'text-green-400';
+                            // Clear form
+                            this.pastedContent = '';
                         } else {
-                            this.message = "❌ Error: " + (data.detail || "Check Key/Slug");
-                            this.messageClass = "bg-red-900/50 text-red-400";
+                            this.statusMsg = `❌ خطأ: ${data.message}`;
+                            this.statusColor = 'text-red-400';
                         }
                     } catch(e) {
-                        this.message = "❌ Network Error: " + e.message;
-                        this.messageClass = "bg-red-900/50 text-red-400";
-                    } finally {
-                        this.isGenerating = false;
+                        this.statusMsg = "خطأ في الاتصال";
                     }
                 }
             }
