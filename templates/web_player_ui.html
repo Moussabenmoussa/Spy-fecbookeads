@@ -8,72 +8,65 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0b1120; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        ::-webkit-scrollbar { width: 6px; }
+        body { background-color: #0b1120; color: white; font-family: sans-serif; overflow: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         .cat-item { cursor: pointer; padding: 10px; border-bottom: 1px solid #1f2937; font-size: 13px; color: #9ca3af; transition: 0.2s; }
         .cat-item:hover, .cat-item.active { background: #1e293b; color: #3b82f6; font-weight: bold; border-left: 3px solid #3b82f6; }
-        .channel-card:hover { transform: scale(1.03); background-color: #1f2937; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .channel-card:hover { transform: scale(1.03); background-color: #1f2937; z-index: 10; }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <div id="login-ui" class="w-full h-screen flex items-center justify-center bg-gray-900 bg-opacity-95 z-50">
+    <!-- Login -->
+    <div id="login-ui" class="w-full h-screen flex items-center justify-center bg-gray-900 z-50">
         <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-96 border border-gray-700">
-            <div class="text-center mb-6">
-                <i class="fas fa-play-circle text-5xl text-blue-600 mb-2"></i>
-                <h1 class="text-xl font-bold">WebPlayer Login</h1>
-            </div>
+            <h1 class="text-2xl font-bold text-center mb-6 text-blue-500">WebPlayer Login</h1>
             <div class="space-y-3">
-                <input id="host" type="text" placeholder="Server URL (e.g. http://line.tv:80)" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm focus:border-blue-500 outline-none text-white">
-                <input id="user" type="text" placeholder="Username" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm focus:border-blue-500 outline-none text-white">
-                <input id="pass" type="password" placeholder="Password" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm focus:border-blue-500 outline-none text-white">
+                <input id="host" type="text" placeholder="http://server.com:8080" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm text-white outline-none">
+                <input id="user" type="text" placeholder="Username" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm text-white outline-none">
+                <input id="pass" type="password" placeholder="Password" class="w-full p-3 bg-gray-900 rounded border border-gray-600 text-sm text-white outline-none">
                 <button onclick="doLogin()" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded font-bold transition text-white">CONNECT</button>
             </div>
             <p id="msg" class="text-center text-red-400 text-xs mt-4 h-4"></p>
         </div>
     </div>
 
-    <!-- PLAYER -->
+    <!-- Main Player -->
     <div id="main-ui" class="hidden w-full h-screen flex-col">
-        <!-- Header -->
-        <div class="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 shrink-0">
-            <div class="flex items-center gap-2 text-blue-500 font-bold"><i class="fas fa-tv"></i> SomaPlayer</div>
-            <div class="text-xs text-gray-500" id="expiry-date"></div>
-            <button onclick="location.reload()" class="bg-red-600/20 text-red-500 px-3 py-1 rounded text-xs hover:bg-red-600 hover:text-white transition">EXIT</button>
+        <div class="h-12 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 shrink-0">
+            <div class="font-bold text-blue-500"><i class="fas fa-tv"></i> SomaPlayer</div>
+            <button onclick="location.reload()" class="text-red-500 text-xs font-bold">LOGOUT</button>
         </div>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar: Categories -->
+            <!-- Sidebar -->
             <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-                <div class="p-3 bg-gray-900 font-bold text-xs uppercase tracking-wider text-gray-400">Categories</div>
+                <div class="p-2 bg-gray-900 font-bold text-xs text-gray-500">CATEGORIES</div>
                 <div id="cat-list" class="flex-1 overflow-y-auto"></div>
             </div>
 
             <!-- Content -->
             <div class="flex-1 flex flex-col bg-black relative">
-                <!-- Video Player -->
-                <div class="h-[65%] w-full bg-black flex items-center justify-center relative group">
+                <!-- Video -->
+                <div class="h-[60%] w-full bg-black flex items-center justify-center relative">
                     <video id="video" controls autoplay class="w-full h-full object-contain"></video>
-                    <div id="watermark" class="absolute top-4 right-4 text-white/10 font-bold text-2xl pointer-events-none">SOMA PLAYER</div>
+                    <div class="absolute top-4 right-4 text-white/10 font-bold text-xl pointer-events-none">SOMA TV</div>
                 </div>
 
-                <!-- Channels Grid -->
-                <div class="flex-1 bg-gray-900 flex flex-col border-t border-gray-800">
-                    <div class="p-2 border-b border-gray-800 flex gap-2">
-                        <input type="text" id="search" placeholder="Search in this category..." class="flex-1 p-2 bg-gray-800 rounded border border-gray-700 text-sm text-white focus:border-blue-500 outline-none" onkeyup="filterChannels()">
-                    </div>
-                    <div id="channel-list" class="flex-1 overflow-y-auto p-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 content-start"></div>
+                <!-- Channels -->
+                <div class="flex-1 bg-gray-900 overflow-y-auto border-t border-gray-800 p-2">
+                    <input type="text" id="search" placeholder="Search channel..." class="w-full p-2 bg-gray-800 rounded border border-gray-700 mb-2 text-sm text-white" onkeyup="filterChannels()">
+                    <div id="channel-list" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let CREDENTIALS = {};
-        let CURRENT_CHANNELS = [];
-        let HLS_PLAYER = null;
+        let AUTH = {};
+        let CHANNELS = [];
+        let HLS = null;
 
         async function doLogin() {
             const host = document.getElementById('host').value;
@@ -82,10 +75,8 @@
             const btn = document.getElementById('loginBtn');
             const msg = document.getElementById('msg');
 
-            if(!host || !user || !pass) return msg.innerText = "Missing credentials";
-            
-            btn.innerText = "Authenticating...";
-            btn.disabled = true;
+            if(!host || !user || !pass) return msg.innerText = "Missing Info";
+            btn.innerText = "Connecting..."; btn.disabled = true;
 
             try {
                 const res = await fetch('/api/xtream/auth', {
@@ -94,127 +85,104 @@
                     body: JSON.stringify({ host, username: user, password: pass })
                 });
                 const data = await res.json();
-
-                if (data.user_info && data.user_info.auth === 1) {
-                    CREDENTIALS = { host, user, pass };
-                    // تنظيف الهوست للبروكسي
-                    CREDENTIALS.cleanHost = host.replace('http://','').replace('https://','').replace(/\/$/, "");
+                
+                if(data.user_info && data.user_info.auth == 1){
+                    AUTH = { host, user, pass };
+                    // Ensure host has http/https
+                    if(!AUTH.host.startsWith('http')) AUTH.host = 'http://' + AUTH.host;
                     
                     document.getElementById('login-ui').classList.add('hidden');
                     document.getElementById('main-ui').classList.remove('hidden');
                     document.getElementById('main-ui').classList.add('flex');
-                    
-                    // إظهار تاريخ الانتهاء
-                    if(data.user_info.exp_date) {
-                        const date = new Date(data.user_info.exp_date * 1000);
-                        document.getElementById('expiry-date').innerText = "Exp: " + date.toLocaleDateString();
-                    }
-
                     loadCategories();
                 } else {
-                    msg.innerText = "Login Failed. Check User/Pass.";
+                    msg.innerText = "Login Failed";
                 }
-            } catch(e) { msg.innerText = "Server Error."; }
-            btn.innerText = "LOGIN"; btn.disabled = false;
+            } catch(e) { msg.innerText = "Server Error"; }
+            btn.innerText = "CONNECT"; btn.disabled = false;
         }
 
         async function loadCategories() {
             const list = document.getElementById('cat-list');
-            list.innerHTML = '<div class="p-4 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin"></i></div>';
+            list.innerHTML = '<div class="p-4 text-center text-gray-500"><i class="fas fa-spinner fa-spin"></i></div>';
             
             try {
                 const res = await fetch('/api/xtream/live', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(CREDENTIALS)
+                    body: JSON.stringify(AUTH)
                 });
                 const data = await res.json();
-                
                 list.innerHTML = '';
-                // لا يوجد خيار "الكل" لتجنب الانهيار، يجب اختيار تصنيف
                 
                 data.forEach(cat => {
                     const div = document.createElement('div');
                     div.className = 'cat-item';
                     div.innerText = cat.category_name;
                     div.onclick = function() {
-                        // إزالة التظليل عن الباقي
-                        document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+                        document.querySelectorAll('.cat-item').forEach(e=>e.classList.remove('active'));
                         this.classList.add('active');
-                        fetchChannels(cat.category_id);
+                        loadChannels(cat.category_id);
                     };
                     list.appendChild(div);
                 });
-            } catch(e) { list.innerHTML = '<div class="p-2 text-red-500 text-xs">Failed to load</div>'; }
+            } catch(e) { list.innerHTML = '<div class="text-red-500 text-xs p-2">Failed</div>'; }
         }
 
-        async function fetchChannels(catId) {
+        async function loadChannels(catId) {
             const grid = document.getElementById('channel-list');
-            grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500"><i class="fas fa-circle-notch fa-spin text-2xl"></i><br>Loading Streams...</div>';
-
+            grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Loading...</div>';
+            
             try {
-                // نطلب القنوات للتصنيف المحدد فقط (أسرع بـ 100 مرة)
-                // نمرر cat_id في الرابط
                 const res = await fetch(`/api/xtream/live_streams?category_id=${catId}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(CREDENTIALS)
+                    body: JSON.stringify(AUTH)
                 });
-                
-                CURRENT_CHANNELS = await res.json();
-                renderChannels(CURRENT_CHANNELS);
-
-            } catch(e) { grid.innerHTML = '<div class="col-span-full text-center text-red-500">Error loading channels</div>'; }
+                CHANNELS = await res.json();
+                renderList(CHANNELS.slice(0, 100));
+            } catch(e) { grid.innerHTML = '<div class="col-span-full text-center text-red-500">Error</div>'; }
         }
 
-        function renderChannels(channels) {
+        function renderList(data) {
             const grid = document.getElementById('channel-list');
             grid.innerHTML = '';
-            
-            if(channels.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">No channels found</div>';
-                return;
-            }
-
-            // عرض أول 200 قناة فقط للحفاظ على المتصفح خفيفاً
-            const limit = channels.slice(0, 200); 
-            
-            limit.forEach(ch => {
-                const el = document.createElement('div');
-                el.className = 'channel-card bg-gray-800 p-2 rounded cursor-pointer flex flex-col items-center gap-2';
-                el.onclick = () => playStream(ch.stream_id);
+            data.forEach(ch => {
+                const div = document.createElement('div');
+                div.className = 'channel-card bg-gray-800 p-2 rounded cursor-pointer';
+                div.onclick = () => playStream(ch.stream_id);
                 
                 const img = ch.stream_icon && ch.stream_icon.startsWith('http') ? ch.stream_icon : 'https://via.placeholder.com/100x60?text=TV';
                 
-                el.innerHTML = `
-                    <div class="w-full h-16 bg-black rounded flex items-center justify-center overflow-hidden">
-                        <img src="${img}" class="max-h-full max-w-full" loading="lazy" onerror="this.src='https://via.placeholder.com/100x60?text=No+Img'">
+                div.innerHTML = `
+                    <div class="h-16 bg-black rounded flex items-center justify-center mb-1 overflow-hidden">
+                        <img src="${img}" class="h-full object-contain" onerror="this.src='https://via.placeholder.com/100x60?text=Error'">
                     </div>
-                    <div class="text-[10px] text-gray-300 font-bold truncate w-full text-center">${ch.name}</div>
+                    <div class="text-[10px] truncate text-gray-300 font-bold">${ch.name}</div>
                 `;
-                grid.appendChild(el);
+                grid.appendChild(div);
             });
         }
 
         function filterChannels() {
             const q = document.getElementById('search').value.toLowerCase();
-            const filtered = CURRENT_CHANNELS.filter(c => c.name.toLowerCase().includes(q));
-            renderChannels(filtered);
+            const res = CHANNELS.filter(c => c.name.toLowerCase().includes(q));
+            renderList(res.slice(0, 100));
         }
 
-        function playStream(streamId) {
+        function playStream(id) {
             const video = document.getElementById('video');
-            
-            // استخدام البروكسي الداخلي لتشغيل الفيديو (حل مشكلة HTTPS)
-            // الصيغة: /stream/HOST/USER/PASS/ID.m3u8
-            const proxyUrl = `/stream/${CREDENTIALS.cleanHost}/${CREDENTIALS.user}/${CREDENTIALS.pass}/${streamId}.m3u8`;
+            // The Secret Fix: Pass the REAL stream URL to our Python Proxy
+            const realUrl = `${AUTH.host}/live/${AUTH.user}/${AUTH.pass}/${id}.m3u8`;
+            // Encode it to be safe in URL
+            const proxyUrl = `/stream_proxy?url=${encodeURIComponent(realUrl)}`;
 
             if (Hls.isSupported()) {
-                if(HLS_PLAYER) HLS_PLAYER.destroy();
-                HLS_PLAYER = new Hls();
-                HLS_PLAYER.loadSource(proxyUrl);
-                HLS_PLAYER.attachMedia(video);
-                HLS_PLAYER.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                if(HLS) HLS.destroy();
+                HLS = new Hls();
+                HLS.loadSource(proxyUrl);
+                HLS.attachMedia(video);
+                HLS.on(Hls.Events.MANIFEST_PARSED, () => video.play());
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = proxyUrl;
                 video.play();
