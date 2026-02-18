@@ -1,27 +1,25 @@
-
-# main.py
+# main.py - نظيف 100% لـ Render
 import os
 import logging
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from motor.motor_asyncio import AsyncIOMotorClient
 from keyword_engine import KeywordEngine
 from dotenv import load_dotenv
-from pathlib import Path
 
-# تحميل متغيرات البيئة
 load_dotenv()
-
-# إعداد التسجيل
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ───────────────────────────────────────────────────────────────
+# 1. تطبيق FastAPI
+# ───────────────────────────────────────────────────────────────
 app = FastAPI(title="Keyword Pro Tool")
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,7 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB
+# ───────────────────────────────────────────────────────────────
+# 2. قاعدة البيانات
+# ───────────────────────────────────────────────────────────────
 MONGODB_URI = os.getenv("MONGODB_URI")
 client = AsyncIOMotorClient(MONGODB_URI) if MONGODB_URI else None
 db = client.keyword_tool_db if client else None
@@ -38,85 +38,87 @@ searches_collection = db.searches if db else None
 
 engine = KeywordEngine()
 
+# ───────────────────────────────────────────────────────────────
+# 3. النماذج
+# ───────────────────────────────────────────────────────────────
 class KeywordRequest(BaseModel):
     keywords: List[str]
 
 # ───────────────────────────────────────────────────────────────
-# ✅ الصفحة الرئيسية: تخدم ملف HTML مباشرة
+# 4. المسارات (Routes) - فقط دوال، لا يوجد كود خارجي
 # ───────────────────────────────────────────────────────────────
-@app.get("/", response_class=HTMLResponse)
-async def serve_frontend():
-    # الحصول على مسار المجلد الحالي بدقة
+
+@app.get("/")
+async def root():
+    """خدمة واجهة المستخدم"""
     base_dir = Path(__file__).resolve().parent
     html_path = base_dir / "static" / "index.html"
     
-    logger.info(f"🔍 Looking for frontend at: {html_path}")
-    logger.info(f"📁 File exists: {html_path.exists()}")
-    
     if html_path.exists():
-        logger.info("✅ Serving index.html")
         return FileResponse(html_path)
-    else:
-        logger.error(f"❌ File not found at: {html_path}")
-        # في حال عدم وجود الملف، نعيد رسالة خطأ واضحة في HTML
-        return HTMLResponse(
-            content="<h1>❌ Frontend Not Found</h1><p>Make sure static/index.html exists in your repo.</p><br><a href='/docs'>Go to API Docs</a>",
-            status_code=404
-        )
-
-# ───────────────────────────────────────────────────────────────
-# مسارات API
-# ───────────────────────────────────────────────────────────────
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Frontend not found", "docs": "/docs"}
+    )
 
 @app.get("/api/health")
-async def health_check():
+async def health():
+    """فحص الصحة"""
+    base_dir = Path(__file__).resolve().parent
     return {
         "status": "healthy",
         "database": "connected" if client else "disconnected",
-        "frontend": "loaded" if (Path(__file__).resolve().parent / "static" / "index.html").exists() else "missing"
+        "frontend_exists": (base_dir / "static" / "index.html").exists()
     }
 
 @app.get("/api/debug")
-async def debug_info():
-    """معلومات تصحيح الأخطاء"""
+async def debug():
+    """معلومات التصحيح"""
     base_dir = Path(__file__).resolve().parent
+    static_dir = base_dir / "static"
     return {
         "cwd": os.getcwd(),
         "base_dir": str(base_dir),
-        "static_dir": str(base_dir / "static"),
-        "index_path": str(base_dir / "static" / "index.html"),
-        "index_exists": (base_dir / "static" / "index.html").exists(),
-        "static_contents": os.listdir(base_dir / "static") if (base_dir / "static").exists() else "DIR NOT FOUND"
+        "static_exists": static_dir.exists(),
+        "index_exists": (static_dir / "index.html").exists(),
+        "static_files": os.listdir(static_dir) if static_dir.exists() else []
     }
 
 @app.post("/api/research")
-async def research_keywords(request: KeywordRequest):
-    logger.info(f"🔍 Research request: {request.keywords}")
+async def research(request: KeywordRequest):
+    """نقطة البحث الرئيسية"""
+    logger.info(f"🔍 Request: {request.keywords}")
     try:
         if not request.keywords:
-            raise HTTPException(status_code=400, detail="No keywords provided")
+            raise HTTPException(400, "No keywords provided")
         
         results = engine.research(request.keywords)
         
         if searches_collection:
-            for result in results:
-                await searches_collection.insert_one(result)
+            for r in results:
+                await searches_collection.insert_one(r)
         
         return {"status": "success", "data": results, "count": len(results)}
     except Exception as e:
-        logger.error(f"❌ Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"❌ Error: {e}")
+        raise HTTPException(500, str(e))
 
 @app.get("/api/history")
-async def get_history(limit: int = 10):
+async def history(limit: int = 10):
+    """سجل البحث"""
     if not searches_collection:
-        return JSONResponse({"status": "error", "message": "DB not connected"}, status_code=503)
+        return JSONResponse({"error": "DB not connected"}, status_code=503)
     try:
-        history = await searches_collection.find().limit(limit).to_list(length=limit)
-        for item in history:
+        items = await searches_collection.find().limit(limit).to_list(limit)
+        for item in items:
             item['_id'] = str(item['_id'])
-        return {"status": "success", "data": history}
+        return {"status": "success", "data": items}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
-# ⚠️ تحذير: لا تضع أي كود تنفيذي هنا (لا if __name__ == "__main__")
+# ───────────────────────────────────────────────────────────────
+# ⚠️ STOP: لا تضع أي كود بعد هذا السطر! ⚠️
+# لا if __name__ == "__main__"
+# لا print() خارج الدوال
+# لا تنفيذ أي دالة هنا
+# ───────────────────────────────────────────────────────────────
