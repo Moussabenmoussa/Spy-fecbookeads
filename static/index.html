@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة الكلمات المفتاحية الاحترافية</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 أداة بحث الكلمات المفتاحية</h1>
+        <p>أداة مجانية لتحليل الكلمات المفتاحية من جوجل</p>
+        
+        <div class="search-box">
+            <textarea id="keywords" placeholder="أدخل الكلمات المفتاحية (كل كلمة في سطر)..."></textarea>
+            <button onclick="searchKeywords()" id="searchBtn">ابدأ البحث 🚀</button>
+        </div>
+        
+        <div id="loading" class="hidden">جاري البحث... يرجى الانتظار ⏳</div>
+        
+        <div id="results" class="results-container"></div>
+        
+        <div class="actions">
+            <button onclick="exportCSV()" class="btn-secondary">تصدير CSV 📥</button>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = [];
+        
+        async function searchKeywords() {
+            const keywords = document.getElementById('keywords').value.split('\n').filter(k => k.trim());
+            if (keywords.length === 0) return alert('الرجاء إدخال كلمات مفتاحية');
+            
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('searchBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({keywords})
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentResults = data.data;
+                    displayResults(data.data);
+                }
+            } catch (error) {
+                alert('حدث خطأ: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('searchBtn').disabled = false;
+            }
+        }
+        
+        function displayResults(results) {
+            const container = document.getElementById('results');
+            container.innerHTML = results.map(r => `
+                <div class="result-card">
+                    <h3>🔑 ${r.seed_keyword}</h3>
+                    <p><strong>النتائج:</strong> ${r.suggestions.length} كلمة | <strong>الترند:</strong> ${r.trends_score}</p>
+                    <details>
+                        <summary>عرض الكلمات المقترحة (${r.suggestions.length})</summary>
+                        <ul>${r.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+                    </details>
+                </div>
+            `).join('');
+        }
+        
+        function exportCSV() {
+            if (currentResults.length === 0) return alert('لا توجد نتائج لتصديرها');
+            
+            let csv = 'الكلمة الأساسية,الكلمات المقترحة,درجة الترند\n';
+            currentResults.forEach(r => {
+                csv += `"${r.seed_keyword}","${r.suggestions.join(' | ')}",${r.trends_score}\n`;
+            });
+            
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `keywords_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
