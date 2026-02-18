@@ -1,4 +1,8 @@
 fastapi
 uvicorn
-selenium
-webdriver-manager
+pymongo
+python-dotenv
+requests
+beautifulsoup4
+pytrends
+dnspython
