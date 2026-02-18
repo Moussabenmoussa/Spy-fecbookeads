@@ -1,33 +1,27 @@
+
 # main.py
 import os
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from keyword_engine import KeywordEngine
 from dotenv import load_dotenv
+from pathlib import Path
 
 # تحميل متغيرات البيئة
 load_dotenv()
 
-# إعداد التسجيل (Logging)
+# إعداد التسجيل
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ───────────────────────────────────────────────────────────────
-# 1. إعداد تطبيق FastAPI
-# ───────────────────────────────────────────────────────────────
-app = FastAPI(
-    title=os.getenv("PROJECT_NAME", "Keyword Pro Tool"),
-    description="أداة احترافية لبحث الكلمات المفتاحية",
-    version="1.0.0"
-)
+app = FastAPI(title="Keyword Pro Tool")
 
-# السماح بـ CORS (مهم للواجهة الأمامية)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,102 +30,93 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ───────────────────────────────────────────────────────────────
-# 2. إعداد قاعدة البيانات (MongoDB)
-# ───────────────────────────────────────────────────────────────
+# MongoDB
 MONGODB_URI = os.getenv("MONGODB_URI")
-if not MONGODB_URI:
-    logger.warning("⚠️ MONGODB_URI not found in environment variables")
-
 client = AsyncIOMotorClient(MONGODB_URI) if MONGODB_URI else None
 db = client.keyword_tool_db if client else None
 searches_collection = db.searches if db else None
 
-# ───────────────────────────────────────────────────────────────
-# 3. تهيئة محرك البحث
-# ───────────────────────────────────────────────────────────────
 engine = KeywordEngine()
 
-# ───────────────────────────────────────────────────────────────
-# 4. نماذج البيانات (Pydantic)
-# ───────────────────────────────────────────────────────────────
 class KeywordRequest(BaseModel):
     keywords: List[str]
 
 # ───────────────────────────────────────────────────────────────
-# 5. مسارات API (Routes)
+# ✅ الصفحة الرئيسية: تخدم ملف HTML مباشرة
 # ───────────────────────────────────────────────────────────────
-
 @app.get("/", response_class=HTMLResponse)
-async def root():
-    """الصفحة الرئيسية - تعرض واجهة المستخدم"""
-    try:
-        with open("static/index.html", "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    except FileNotFoundError:
-        return {"message": "Welcome to Keyword Pro Tool API 🚀", "docs": "/docs"}
+async def serve_frontend():
+    # الحصول على مسار المجلد الحالي بدقة
+    base_dir = Path(__file__).resolve().parent
+    html_path = base_dir / "static" / "index.html"
+    
+    logger.info(f"🔍 Looking for frontend at: {html_path}")
+    logger.info(f"📁 File exists: {html_path.exists()}")
+    
+    if html_path.exists():
+        logger.info("✅ Serving index.html")
+        return FileResponse(html_path)
+    else:
+        logger.error(f"❌ File not found at: {html_path}")
+        # في حال عدم وجود الملف، نعيد رسالة خطأ واضحة في HTML
+        return HTMLResponse(
+            content="<h1>❌ Frontend Not Found</h1><p>Make sure static/index.html exists in your repo.</p><br><a href='/docs'>Go to API Docs</a>",
+            status_code=404
+        )
+
+# ───────────────────────────────────────────────────────────────
+# مسارات API
+# ───────────────────────────────────────────────────────────────
 
 @app.get("/api/health")
 async def health_check():
-    """فحص صحة التطبيق وقاعدة البيانات"""
-    db_status = "connected" if client else "disconnected"
     return {
         "status": "healthy",
-        "database": db_status,
-        "version": "1.0.0"
+        "database": "connected" if client else "disconnected",
+        "frontend": "loaded" if (Path(__file__).resolve().parent / "static" / "index.html").exists() else "missing"
+    }
+
+@app.get("/api/debug")
+async def debug_info():
+    """معلومات تصحيح الأخطاء"""
+    base_dir = Path(__file__).resolve().parent
+    return {
+        "cwd": os.getcwd(),
+        "base_dir": str(base_dir),
+        "static_dir": str(base_dir / "static"),
+        "index_path": str(base_dir / "static" / "index.html"),
+        "index_exists": (base_dir / "static" / "index.html").exists(),
+        "static_contents": os.listdir(base_dir / "static") if (base_dir / "static").exists() else "DIR NOT FOUND"
     }
 
 @app.post("/api/research")
 async def research_keywords(request: KeywordRequest):
-    """نقطة النهاية الرئيسية: البحث عن كلمات مفتاحية"""
-    logger.info(f"🔍 Received research request for: {request.keywords}")
-    
+    logger.info(f"🔍 Research request: {request.keywords}")
     try:
         if not request.keywords:
             raise HTTPException(status_code=400, detail="No keywords provided")
         
-        # تنفيذ البحث عبر المحرك
         results = engine.research(request.keywords)
         
-        # الحفظ في MongoDB (إذا كانت متصلة)
         if searches_collection:
             for result in results:
                 await searches_collection.insert_one(result)
-            logger.info(f"💾 Saved {len(results)} results to MongoDB")
         
-        return {
-            "status": "success", 
-            "data": results, 
-            "count": len(results),
-            "message": f"Found keywords for {len(request.keywords)} seeds"
-        }
-        
+        return {"status": "success", "data": results, "count": len(results)}
     except Exception as e:
-        logger.error(f"❌ Error in research endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        logger.error(f"❌ Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/history")
 async def get_history(limit: int = 10):
-    """جلب آخر عمليات البحث من السجل"""
     if not searches_collection:
-        return {"status": "error", "message": "Database not connected"}
-    
+        return JSONResponse({"status": "error", "message": "DB not connected"}, status_code=503)
     try:
         history = await searches_collection.find().limit(limit).to_list(length=limit)
-        # تحويل ObjectId إلى نص
         for item in history:
             item['_id'] = str(item['_id'])
         return {"status": "success", "data": history}
     except Exception as e:
-        logger.error(f"❌ Error fetching history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ───────────────────────────────────────────────────────────────
-# 6. خدمة الملفات الثابتة (الواجهة الأمامية)
-# ───────────────────────────────────────────────────────────────
-# ملاحظة: Render يتعامل مع static files بشكل مختلف، لذا نخدم index.html يدوياً في root
-
-# ───────────────────────────────────────────────────────────────
-# ⚠️ تحذير هام: لا تضع أي كود هنا خارج الدوال! ⚠️
-# لا تضع if __name__ == "__main__" أبداً عند النشر على Render
-# ───────────────────────────────────────────────────────────────
+# ⚠️ تحذير: لا تضع أي كود تنفيذي هنا (لا if __name__ == "__main__")
