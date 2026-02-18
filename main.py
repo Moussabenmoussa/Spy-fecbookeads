@@ -60,8 +60,4 @@ async def get_history(limit: int = 10):
 async def root():
     return {"message": "Welcome to Keyword Pro Tool API"}
 
-# تشغيل الخادم
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
