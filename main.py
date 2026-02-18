@@ -1,55 +1,66 @@
-from fastapi import FastAPI
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-import time
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import List
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
+from dotenv import load_dotenv
+from keyword_engine import KeywordEngine
 
-app = FastAPI()
+load_dotenv()
 
-# مسارات كروم التي ثبتناها في ملف build.sh
-CHROME_PATH = "/opt/render/project/src/chrome"
-CHROMEDRIVER_PATH = "/opt/render/project/src/chromedriver"
+app = FastAPI(title=os.getenv("PROJECT_NAME", "Keyword Pro Tool"))
 
-def get_driver():
-    """تجهيز المتصفح الخفي"""
-    options = Options()
-    options.binary_location = CHROME_PATH
-    options.add_argument("--headless")  # هام جداً: العمل بدون شاشة
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    # تزييف الهوية لكي لا يتم كشفنا كـ Headless
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
-    service = Service(executable_path=CHROMEDRIVER_PATH)
-    driver = webdriver.Chrome(service=service, options=options)
-    return driver
+# السماح بالوصول من جميع المصادر (للتطوير)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# الاتصال بقاعدة البيانات
+client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
+db = client.keyword_tool_db
+searches_collection = db.searches
+
+# محرك البحث
+engine = KeywordEngine()
+
+class KeywordRequest(BaseModel):
+    keywords: List[str]
+
+@app.post("/api/research")
+async def research_keywords(request: KeywordRequest):
+    try:
+        if not request.keywords:
+            raise HTTPException(status_code=400, detail="No keywords provided")
+        
+        # تنفيذ البحث
+        results = engine.research(request.keywords)
+        
+        # حفظ في قاعدة البيانات
+        for result in results:
+            await searches_collection.insert_one(result)
+        
+        return {"status": "success", "data": results, "count": len(results)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/history")
+async def get_history(limit: int = 10):
+    history = await searches_collection.find().limit(limit).to_list(length=limit)
+    for item in history:
+        item['_id'] = str(item['_id'])
+    return {"status": "success", "data": history}
 
 @app.get("/")
-def home():
-    return {"status": "Bot is Ready", "engine": "Selenium Headless"}
+async def root():
+    return {"message": "Welcome to Keyword Pro Tool API"}
 
-@app.get("/visit")
-def visit_target(url: str):
-    """نقطة النهاية التي تأمر البوت بزيارة موقع"""
-    print(f"🚀 Starting mission to: {url}")
-    
-    try:
-        driver = get_driver()
-        driver.get(url)
-        
-        # الانتظار لتحميل الإعلانات والجافاسكريبت
-        time.sleep(5) 
-        
-        title = driver.title
-        driver.quit() # إغلاق المتصفح لتوفير الرام
-        
-        return {"status": "Success", "title": title, "url": url}
-    
-    except Exception as e:
-        return {"status": "Error", "message": str(e)}
-
+# تشغيل الخادم
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
