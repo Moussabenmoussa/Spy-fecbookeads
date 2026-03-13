@@ -1,21 +1,23 @@
 # =====================================================================
 # ملف: main.py
 # المشروع: أداة الاستخلاص النصي من يوتيوب (YouTube Transcript Extractor)
-# المعمارية: خادم API + واجهة ويب + دعم الكوكيز بتنسيق JSON (تجاوز الحظر)
-# التحديث: نظام معالجة JSON Cookies الصارم v3.0
+# المعمارية: خادم API + واجهة ويب + محول JSON Cookies آلي
+# الإصدار: v4.0 (إصدار الاستقرار النهائي)
 # =====================================================================
 
 import re
 import os
 import json
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+# استدعاء كلاس المكتبة بشكل مباشر وصحيح
 from youtube_transcript_api import YouTubeTranscriptApi
 
 # تهيئة التطبيق
-app = FastAPI(title="YouTube Transcript API ULTIMATE", version="3.0")
+app = FastAPI(title="YouTube Transcript API ULTIMATE", version="4.0")
 
 # إعدادات CORS للسماح بالاتصال من تطبيق Flutter مستقبلاً
 app.add_middleware(
@@ -36,15 +38,29 @@ def extract_video_id(url: str) -> str:
     match = re.search(pattern, url)
     return match.group(1) if match else None
 
-# دالة تحويل ملف JSON الكوكيز إلى قاموس تفهمه المكتبة
-def load_json_cookies(file_path):
+# دالة هندسية لتحويل JSON إلى تنسيق Netscape الذي تحتاجه المكتبة
+def convert_json_to_netscape(json_path, output_path):
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            cookies_data = json.load(f)
-            # تحويل قائمة الكوكيز من تنسيق JSON إلى قاموس {name: value}
-            return {cookie['name']: cookie['value'] for cookie in cookies_data}
-    except Exception:
-        return None
+        with open(json_path, 'r', encoding='utf-8') as f:
+            cookies = json.load(f)
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write("# Netscape HTTP Cookie File\n")
+            for c in cookies:
+                # تحويل القيم المنطقية إلى نص TRUE/FALSE
+                domain = c.get('domain', '')
+                path = c.get('path', '/')
+                secure = "TRUE" if c.get('secure', False) else "FALSE"
+                expires = int(c.get('expirationDate', time.time() + 3600))
+                name = c.get('name', '')
+                value = c.get('value', '')
+                
+                # صياغة السطر بتنسيق Netscape القياسي
+                f.write(f"{domain}\tTRUE\t{path}\t{secure}\t{expires}\t{name}\t{value}\n")
+        return True
+    except Exception as e:
+        print(f"Error converting cookies: {e}")
+        return False
 
 # =====================================================================
 # مسار الواجهة البرمجية (API Endpoint)
@@ -56,23 +72,24 @@ async def extract_transcript(req: VideoRequest):
     if not video_id:
         raise HTTPException(status_code=400, detail="رابط يوتيوب غير صالح.")
 
-    # مسار ملف الكوكيز بتنسيق JSON الذي وفرته أنت
-    cookie_path = "cookies.json"
-    cookies_dict = None
+    json_cookie_path = "cookies.json"
+    netscape_cookie_path = "temp_cookies.txt"
 
-    if os.path.exists(cookie_path):
-        cookies_dict = load_json_cookies(cookie_path)
+    # التحقق من وجود ملف JSON وتحويله فوراً
+    if os.path.exists(json_cookie_path):
+        success = convert_json_to_netscape(json_cookie_path, netscape_cookie_path)
+        if not success:
+            netscape_cookie_path = None
+    else:
+        netscape_cookie_path = None
 
     try:
-        # هندسة الاستخراج باستخدام الكوكيز المحولة من JSON
-        if cookies_dict:
-            # تمرير القاموس مباشرة للمكتبة
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id, cookies=cookie_path)
-            # ملاحظة: المكتبة في الإصدارات الحديثة تفضل المسار، 
-            # ولكن إذا كان JSON سنستخدم الطريقة التالية لضمان العمل:
-            # YouTubeTranscriptApi.get_transcript(video_id, cookies=cookie_path)
+        # استدعاء المكتبة بشكل صحيح (Static Call)
+        if netscape_cookie_path:
+            # استخدام الملف المحول لتجاوز الحظر
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id, cookies=netscape_cookie_path)
         else:
-            # محاولة بدون كوكيز
+            # محاولة بدون كوكيز (قد تفشل على السيرفر)
             transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         
         full_text = " ".join([entry['text'].replace('\n', ' ') for entry in transcript_list])
@@ -83,14 +100,13 @@ async def extract_transcript(req: VideoRequest):
             "video_id": video_id,
             "full_text": full_text,
             "segments": transcript_list,
-            "auth_method": "JSON_Cookies" if cookies_dict else "None"
+            "auth": "Netscape_Converted" if netscape_cookie_path else "Direct"
         }
 
     except Exception as e:
         error_msg = str(e)
-        # تحليل الخطأ لتوجيهك
-        if "cookies" in error_msg.lower() or "blocked" in error_msg.lower():
-            raise HTTPException(status_code=403, detail="يوتيوب حظر السيرفر. تأكد أن ملف cookies.json حديث.")
+        if "cookies" in error_msg.lower() or "IP" in error_msg or "blocked" in error_msg.lower():
+            raise HTTPException(status_code=403, detail="يوتيوب حظر السيرفر. حدث ملف cookies.json الخاص بك.")
         else:
             raise HTTPException(status_code=500, detail=f"خطأ تقني: {error_msg}")
 
@@ -100,46 +116,45 @@ async def extract_transcript(req: VideoRequest):
 @app.get("/", response_class=HTMLResponse)
 async def get_test_ui():
     has_json = os.path.exists("cookies.json")
-    status_msg = "✅ نظام الكوكيز (JSON) نشط ومحمل" if has_json else "⚠️ السيرفر يعمل بدون كوكيز (خطر الحظر)"
-    status_class = "text-green-600 font-bold" if has_json else "text-red-500 font-bold animate-pulse"
-
+    status_msg = "✅ نظام التحويل الذكي (JSON -> Netscape) جاهز" if has_json else "⚠️ السيرفر يفتقد لملف cookies.json"
+    
     html_content = f"""
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>YouTube Transcript PRO v3</title>
+        <title>YouTube Transcript PRO v4</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-            body {{ font-family: 'Cairo', sans-serif; background-color: #f4f7fa; }}
+            body {{ font-family: 'Cairo', sans-serif; background-color: #f8fafc; }}
         </style>
     </head>
     <body class="min-h-screen flex flex-col items-center py-12 px-6">
-        <div class="w-full max-w-6xl bg-white p-12 rounded-[2.5rem] shadow-2xl border border-gray-100">
-            <div class="mb-10 text-center">
-                <h1 class="text-4xl font-black text-gray-900 mb-4">مستخلص النصوص <span class="text-blue-600">JSON Edition</span></h1>
-                <p class="text-xl {status_class}">{status_msg}</p>
+        <div class="w-full max-w-6xl bg-white p-12 rounded-[3rem] shadow-2xl border border-gray-100">
+            <div class="text-center mb-12">
+                <h1 class="text-5xl font-black text-slate-900 mb-4 tracking-tight">مستخلص النصوص <span class="text-blue-600 underline">PRO</span></h1>
+                <p class="text-lg font-bold {'text-green-600' if has_json else 'text-red-600'}">{status_msg}</p>
             </div>
             
-            <div class="flex flex-col md:flex-row gap-4 mb-12">
-                <input type="text" id="youtubeUrl" placeholder="أدخل رابط فيديو يوتيوب هنا..." class="flex-1 px-8 py-5 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none text-left shadow-inner transition-all" dir="ltr">
-                <button onclick="extractText()" id="mainBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-12 py-5 rounded-2xl transition-all active:scale-95 shadow-xl">
-                    استخراج النص
+            <div class="flex flex-col md:flex-row gap-5 mb-12">
+                <input type="text" id="youtubeUrl" placeholder="أدخل رابط فيديو يوتيوب هنا..." class="flex-1 px-8 py-5 bg-gray-50 border-2 border-gray-100 focus:border-blue-500 rounded-3xl outline-none text-left shadow-inner transition-all text-xl" dir="ltr">
+                <button onclick="extractText()" id="mainBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-16 py-5 rounded-3xl transition-all active:scale-95 shadow-2xl shadow-blue-200 text-xl">
+                    استخراج
                 </button>
             </div>
 
-            <div id="errorBox" class="hidden bg-red-50 border-r-8 border-red-500 text-red-900 p-8 mb-10 rounded-2xl font-bold shadow-sm"></div>
+            <div id="errorBox" class="hidden bg-red-50 border-r-8 border-red-500 text-red-900 p-8 mb-10 rounded-3xl font-bold shadow-md animate-pulse"></div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 hidden" id="resultsContainer">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 hidden" id="resultsContainer">
                 <div class="flex flex-col">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">النص الكامل</h2>
-                    <textarea id="fullTextOutput" class="h-[500px] w-full p-8 border border-gray-100 rounded-3xl bg-gray-50 text-gray-800 leading-relaxed resize-none focus:outline-none" readonly></textarea>
+                    <h2 class="text-2xl font-black text-gray-800 mb-6">المحتوى النصي الكامل</h2>
+                    <textarea id="fullTextOutput" class="h-[600px] w-full p-10 border border-gray-100 rounded-[2.5rem] bg-gray-50 text-gray-800 leading-[2] resize-none focus:outline-none shadow-inner" readonly></textarea>
                 </div>
                 <div class="flex flex-col">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">بيانات الـ JSON</h2>
-                    <textarea id="jsonOutput" class="h-[500px] w-full p-8 border border-slate-800 rounded-3xl bg-slate-900 text-blue-300 font-mono text-xs resize-none focus:outline-none" readonly dir="ltr"></textarea>
+                    <h2 class="text-2xl font-black text-gray-800 mb-6">هيكل البيانات الزمنية</h2>
+                    <textarea id="jsonOutput" class="h-[600px] w-full p-10 border border-slate-800 rounded-[2.5rem] bg-slate-900 text-blue-400 font-mono text-sm resize-none focus:outline-none shadow-2xl" readonly dir="ltr"></textarea>
                 </div>
             </div>
         </div>
@@ -174,7 +189,7 @@ async def get_test_ui():
                     errorBox.textContent = e.message;
                     errorBox.classList.remove('hidden');
                 }} finally {{
-                    btn.textContent = 'استخراج النص';
+                    btn.textContent = 'استخراج';
                     btn.disabled = false;
                 }}
             }}
