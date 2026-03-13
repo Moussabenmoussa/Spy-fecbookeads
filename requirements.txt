@@ -1,4 +1,5 @@
 fastapi
 uvicorn
-youtube-transcript-api
+playwright
+playwright-stealth
 pydantic
